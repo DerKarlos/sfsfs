@@ -18,3 +18,9 @@ One ship on an empty ground and default A-Frame controls.
 The is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter.
 
 It is build, also using a new A-Frame Component "aframe-rotation-y". This control takes an a-entity, multiplies it and places one rotated by angle steps. Tis alowes complex struxtures by less work and text.
+
+TRY IT:
+
+www.ac1000.de/s/demo/1
+
+![Spaceship](https://storage.gra3.cloud.ovh.net/v1/AUTH_91eb37814936490c95da7b85993cc2ff/enosmtown/media_attachments/files/000/000/512/original/cd4be8f6233a27df.png)
