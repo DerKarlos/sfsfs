@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>rotate-y example</title>
+    <meta name="description" content="Example how to use aframe-rotate-y">
+    <script src="aframe-master.min.js" ></script>
+    <script src="rotate-y.js"          ></script>
+  </head>
+  <body>
+
+    <a-scene>
+
+      <a-mixin id="bluebox" geometry="primitive:box" material="color:blue" position="4 0 0" ></a-mixin>
+      <a-entity rotate-y="step:27.0; end:270; mixin:bluebox" position="0 -0.5 -8"></a-entity>
+
+      <a-mixin id="gondola" geometry="primitive:sphere" material="color:red" position="6 0 0" scale="0.5 1 0.5" ></a-mixin>
+
+      <a-entity  position="6 3 -12">
+        <a-animation dur="20000"
+                     easing="linear"
+                     to="360 0 0"
+                     repeat="indefinite"></a-animation>
+        <a-entity rotate-y="step:15; mixin:gondola" rotation="0 0 90">
+      </a-entity> 
+
+        
+        
+      </a-entity>
+
+
+    </a-scene>
+
+  </body>
+</html>
