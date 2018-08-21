@@ -13,8 +13,10 @@ The 3D framework A-Frame is used, which works with ThreeJS which uses WebGL to s
 
 ## THE REALITY:
 
-One ship on an empty ground and default A-Frame controls: www.ac1000.de/s/demo/1
-The is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter.
+One ship on an empty ground and default A-Frame controls. The is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter.
+
+[Demo](www.ac1000.de/s/demo/1) - [Source](https://github.com/DerKarlos/sfsfs/blob/master/index.html)
+
 
 ![Spaceship](https://storage.gra3.cloud.ovh.net/v1/AUTH_91eb37814936490c95da7b85993cc2ff/enosmtown/media_attachments/files/000/000/512/original/cd4be8f6233a27df.png)
 
@@ -22,9 +24,6 @@ The is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter.
 ## AFRAME-ROTATE-Y
 
 That ship abowe it is build, also using a new A-Frame Component "aframe-rotation-y". This control takes an a-entity, multiplies it and places one rotated by angle steps. Tis alowes complex struxtures by less work and text.
-
-![example](http://ac1000.de//s/demo/2/example.png)
-
 
 ### Properties
 
@@ -38,8 +37,6 @@ That ship abowe it is build, also using a new A-Frame Component "aframe-rotation
 | mixin3   | a-frame mixin, optioinally containing another entity.   | ''            |
 | mixin4   | a-frame mixin, optioinally containing another entity.   | ''            |
 
-
-
 ### Usage
 
 First define the template entity then place instances in a circle:
@@ -50,3 +47,9 @@ First define the template entity then place instances in a circle:
 ```
 
 Up to for entities may be placed at any angle between start and end by step.
+
+[Demo](www.ac1000.de/s/demo/2) - [Source](https://github.com/DerKarlos/sfsfs/blob/master/rotate-y.js)
+
+![example](http://ac1000.de//s/demo/2/example.png)
+
+
