@@ -2,6 +2,13 @@ Now to clone in A-Frame?
 
 Notes, I found:
 
+
+In https://github.com/ngokevin/kframe/tree/master/components/layout/
+(https://www.npmjs.com/package/aframe-layout
+,https://www.npmjs.com/package/aframe-layout-component)
+Not realy cloning but deleting and inserting, wish enables cloning to.
+
+
 In https://www.npmjs.com/package/aframe-entity-generator-component
 Works with https://www.npmjs.com/package/aframe-randomizer-components
 The main idea I used: It takes a parameter mixin as entity
