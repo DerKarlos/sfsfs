@@ -2,12 +2,20 @@ Now to clone in A-Frame?
 
 Notes, I found:
 
+In: https://github.com/aframevr/aframe/blob/master/src/utils/index.js
+** Javascript clone by JSON **
+module.exports.clone = function (obj) {
+  return JSON.parse(JSON.stringify(obj));
+};
+
+
 In: https://github.com/kfarr/streetmix3d/blob/master/error-clone.js#L81
-    // Copy the element and its child nodes
+    // Copy the element and its child nodes ** DOM-objects do have cloneNode **
     var streetElCopy = streetEl.cloneNode(true);
     streetElCopy.id = "street-clone";
     streetElCopy.setAttribute("position", "0 0 -12.5");
     document.getElementById("streets").appendChild(streetElCopy);
+
 
 In https://github.com/ngokevin/kframe/tree/master/components/layout/
 (https://www.npmjs.com/package/aframe-layout
