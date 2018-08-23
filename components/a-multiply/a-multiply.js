@@ -11,25 +11,18 @@ AFRAME.registerComponent('multiply', {
   // Full name meening: clone multible times and place in mode "rotatory in y-axis with x-radius"
 
   init: function () {
-    console.log("... init")
-    this.children = this.el.getChildEntities();
-  },
- 
- 
-  /**
-   * Clone childs
-   */
-  update: function (oldData) {
-    console.log("/// update")
-    var data     = this.data
-    var elParent = this.el
+    console.log("a-multiply init: "+this.el.id)
+		var data      = this.data
+    var elParent  = this.el
+		this.children = this.el.getChildEntities();
   
     this.children.forEach(function(elChild) 
     {
-      console.log("Sub-entity: "+elChild.id)
+      console.log("a-multiply Sub-entity: "+elChild.id)
       var pos    = elChild.object3D.position
       
       for (var angle = data.start ; angle <= data.end ; angle+=data.step) {
+        console.log("   a-multiply angle: "+angle)
         var rad  = angle/180*Math.PI
         var posX = Math.cos(rad) * pos.x
         var posZ = Math.sin(rad) * pos.x
@@ -45,17 +38,13 @@ AFRAME.registerComponent('multiply', {
       elParent.removeChild(elChild); // remove original
     })//for children
 
-  },//update
-
+  },
+ 
 });
 
 
 
 AFRAME.registerPrimitive('a-multiply', {
-  defaultComponents: {
-    multiply: {primitive: 'multiply'}
-  },
-
   mappings: {
     start: 'damultiplyta.start',
     step:  'multiply.step',
