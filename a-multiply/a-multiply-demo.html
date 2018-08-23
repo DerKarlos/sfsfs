@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>a-frame Test</title>
+    <meta name="description" content="Kugelraumer Perry Rhodan. Demo for rotate-y a-frame component">
+
+    <script src="aframe-master.min.js" ></script>
+    <script src="a-multiply.js"        ></script>
+
+  </head>
+  <body>
+
+    <a-scene background="color: #000000" camera>
+
+      <a-assets>
+        <a-mixin id="redbox" geometry="primitive: box"; material="color:red"; position="3 0 0" ></a-mixin>
+      </a-assets>
+      
+      <a-entity id="ground" geometry="primitive: box; width: 20; depth: 20; height: 0.01" position="0 -1 -10" material="color:grey"></a-entity>
+
+      <a-multiply id="multi" step="22.5" end="270" position="0 0 -10" >
+        <a-entity   id="sub"     position="5  0   0" geometry="primitive: box" material="color:green" ></a-entity>
+        <a-entity   id="mix"                         mixin="redbox"                                   ></a-entity>
+        <a-box      id="box"     position="4  3   0"                           material="color:blue"  >
+          <a-sphere id= "sphere" position="0 -0.5 0" radius="0.3"                                     ></a-sphere>
+        </a-box>
+      </a-entity>
+      
+    </a-scene>
+  </body>
+</html>
