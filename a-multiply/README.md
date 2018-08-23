@@ -20,8 +20,9 @@ This allows complex structures by less work and HTML text.
 | mode     | How to place the copies: rotatory, TODO                 | rotatory      |
 | axis     | Modes: rotatory. What axis to rotate around.            | y             |
 | radius   | Modes: rotatory. What position axis to set the radius   | x             |
+| start    | Angle the first entity is rotated.                      | 0             |
 | step     | Angle each of the next entities is increased.           | 30            |
-| end      | Maximal used angle. Instancing will stop afterwards.    | 360           |
+| end      | Maximal used angle. Instancing will stop afterwards.    | 360-1         |
 
 ### Usage
 
