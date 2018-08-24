@@ -26,17 +26,19 @@ This allows complex structures by less work and HTML text.
 
 ### Usage
 
-TODO Use <a-multiply> like <a.entity> as a "parent" and place "childs" to be multiplied.
-Any type of childs should work (a-box, geometry:box, mixin)
-Each of the "childs" will 
-
-
+Use <a-multiply> like <a-entity> as a "parent" and place "childs" to be multiplied and aranged.
+Any type of childs should work (a-box, geometry:box, mixin). Sub-childs and animations are possible to.
+a-multiply is NOT recrusive usable (yet).
 
 ```html
-    TODO <a-mixin id="bluebox" geometry="primitive:box" material="color:blue" position="4 0 0" ></a-mixin>
-    <a-entity rotate-y="step:27.0; end:270; mixin:bluebox" position="0 0 -8"></a-entity>
+      <a-multiply id="multi" step="22.5" end="270" position="0 0 -10" >
+        <a-entity   id="sub"     position="5  0   0" geometry="primitive: box" material="color:green" ></a-entity>
+        <a-box      id="box"     position="4  3   0"                           material="color:blue"  >
+          <a-sphere id= "sphere" position="0 -0.5 0" radius="0.3"                                     ></a-sphere>
+        </a-box>
+      </a-multiply>
 ```
 
-[Demo](http://ac1000.de/sfsfs/components/a-multiply/a-multiply-demo.html)
+[Demo](http://ac1000.de/sfsfs/components/a-multiply/demo.html)
 
 ![example](demo.png)
