@@ -7,6 +7,7 @@
 
     <script src="lib/aframe-master.min.js"            ></script>
     <script src="components/a-multiply/a-multiply.js" ></script>
+    <script src="components/rotate-y/rotate-y.js"     ></script>
 
   </head>
   <body>
@@ -54,17 +55,18 @@
         <a-entity id="RingU4" geometry="primitive:cylinder; radius: 9.7; height:.2"  mixin="segmentsRad TerrgoniR" position="0 -23 0" ></a-entity>
 
         <!-- Rotation entities -->
-        <a-multiply ID="Imp" step ="30">               <a-entity mixin="Impu" ></a-entity> </a-multiply> <!-- Impulz-Anriebe            -->
-        <a-multiply ID="Ant" start="14">               <a-entity mixin="Aring"></a-entity> </a-multiply> <!-- Montageringe Antriebsring -->
-        <a-multiply ID="An2" start="16">               <a-entity mixin="Aring"></a-entity> </a-multiply>
-        <a-multiply ID="Sen" start="11.5" step="22.5"> <a-entity mixin="Iring"></a-entity> </a-multiply> <!-- Montageringe Senkrecht    -->
-        <a-multiply ID="x30"              step="22.5"> <a-entity mixin="Irin4"></a-entity>
-                                                       <a-entity mixin="Bein" ></a-entity>               <!-- Beine mit Landetellern    -->
-                                                       <a-entity mixin="Bunt" ></a-entity>
-                                                       <a-entity mixin="Te1S" ></a-entity>               <!-- Termostrahler             -->
-                                                       <a-entity mixin="Te1C" ></a-entity>
-                                                       <a-entity mixin="Te2S" ></a-entity>
-                                                       <a-entity mixin="Te2C" ></a-entity> </a-multiply>
+        <a-multiply step="430">
+          <a-entity id="Impu" geometry="primitive:cylinder; height:.2; radius:2"; material="color:#244162"; position="28 -3 0"; rotation="-21 0 0" ></a-entity>
+        </a-multiply>
+
+        <!--a-entity rotate-y="                        mixin: Impu;                                         " ></a-entity> <!-- Impulz-Anriebe            -- >
+          <a-entity mixin="Impu" ></a-entity>
+        <a-entity rotate-y="start: 14.0; step:30.0; mixin: Aring;                                        " ></a-entity> <!-- Montageringe Antriebsring -- >
+        <a-entity rotate-y="start: 16.0; step:30.0; mixin: Aring;                                        " ></a-entity>
+        <a-entity rotate-y="start: 11.5; step:22.5; mixin: Iring;                                        " ></a-entity> <!-- Montageringe Senkrecht    -- >
+        <a-entity rotate-y="             step:22.5; mixin: Irin4; mixin2:Bein; mixin3:Bunt;              " ></a-entity> <!-- Beine mit Landetellern    -- >
+        <a-entity rotate-y="             step:22.5; mixin: Te1S;  mixin2:Te1C; mixin3:Te2S; mixin4:Te2C; " ></a-entity> <!-- Termostrahler             -->
+
       </a-entity><!--Kugelraumer-->
         
     </a-scene>

@@ -31,18 +31,20 @@ AFRAME.registerComponent('multiply', {
       console.log("a-multiply sub-entity: "+elChild.id)
       var pos    = elChild.object3D.position
       var rot    = elChild.object3D.rotation
+      var sca    = elChild.object3D.scale  // Whay is it not cloned???
       
       for (var angle = data.start ; angle <= data.end ; angle+=data.step) {
-        console.log("   a-multiply angle: "+angle)
-        var rad  = angle/180*Math.PI
+        //console.log("   a-multiply angle: "+angle)
+        var rad  = THREE.Math.degToRad(angle)
         var posX = Math.cos(rad) * pos.x
         var posZ = Math.sin(rad) * pos.x
 
         // Copy the element and its child nodes
         var elCopy = elChild.cloneNode(true);
         elCopy.setAttribute("position", posX+" "+ pos.y+       " "+(pos.z-posZ) );
-        elCopy.setAttribute("rotation",rot.x+" "+(rot.y+angle)+" "+ rot.z       );
-				//Copy.object3D.rotation.set(  rot.x,    (rot.y+rad  ),     rot.z       )
+        elCopy.setAttribute("rotation",THREE.Math.radToDeg(rot.x)+" "+(THREE.Math.radToDeg(rot.y)+angle)+" "+ THREE.Math.radToDeg(rot.z) )
+        elCopy.setAttribute("scale",    sca.x+" "+sca.y+       " "+sca.z );
+				//Copy.object3D.rotation.set(  rotX,    (rot.//rad  ),     rotZ       )
         elCopy.id = elChild.id+"_"+angle
         elParent.appendChild(elCopy);
       }//for angles
@@ -57,8 +59,10 @@ AFRAME.registerComponent('multiply', {
 
 
 AFRAME.registerPrimitive('a-multiply', {
+  defaultComponents: {
+  },
   mappings: {
-    start: 'damultiplyta.start',
+    start: 'multiply.start',
     step:  'multiply.step',
 	  end:   'multiply.end'
   }
