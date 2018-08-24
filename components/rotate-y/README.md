@@ -30,6 +30,6 @@ First define the template entity then place instances in a circle:
     <a-entity rotate-y="step:27.0; end:270; mixin:bluebox" position="0 0 -8"></a-entity>
 ```
 
-[Demo](http://ac1000.de/sfsfs/components/rotate-y/rotate-y-demo.html)
+[Demo](http://ac1000.de/sfsfs/components/rotate-y/demo.html)
 
 ![example](demo.png)
