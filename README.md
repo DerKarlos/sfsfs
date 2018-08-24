@@ -15,7 +15,7 @@ The 3D framework A-Frame is used, which works with ThreeJS which uses WebGL to s
 
 One ship on an empty ground and default A-Frame controls. The is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter.
 
-[Demo](http://www.ac1000.de/s/demo/1), [Source](https://github.com/DerKarlos/sfsfs/blob/master/index.html)
+[Demo](http://ac1000.de/sfsfs/index.html) & [Source](index.html)
 
 
 ![Spaceship](https://storage.gra3.cloud.ovh.net/v1/AUTH_91eb37814936490c95da7b85993cc2ff/enosmtown/media_attachments/files/000/000/512/original/cd4be8f6233a27df.png)
