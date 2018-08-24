@@ -37,6 +37,6 @@ Each of the "childs" will
     <a-entity rotate-y="step:27.0; end:270; mixin:bluebox" position="0 0 -8"></a-entity>
 ```
 
-[Demo](http://www.ac1000.de/s/demo/3), [Source](https://github.com/DerKarlos/sfsfs/blob/master/a-multiply/a-multiply.js)
+[Demo](http://ac1000.de/sfsfs/components/a-multiply/a-multiply-demo.html)
 
-![example](http://ac1000.de//s/demo/3/example.png)
+![example](demo.png)
