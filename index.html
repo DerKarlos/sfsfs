@@ -3,19 +3,30 @@
   <head>
     <meta charset="utf-8">
     <title>3DMR Test</title>
-    <meta name="description" content="Kugelraumer Perry Rhodan. Demo for rotate-y a-frame component">
-
-    <script src="lib/aframe-master.min.js"            ></script>
-    <script src="components/a-multiply/a-multiply.js" ></script>
-
+    <meta name="description" content="SFSFS  - TODO">
+    <script src="lib/aframe-master.min.js"                  ></script>
+    <script src="lib/star-system.js"                        ></script>
+    <script src="components/a-multiply/a-multiply.js"       ></script>
+    <script src="components/m-controls/m-controls-keys.js"  ></script>
+    <script src="components/m-controls/m-controls-point.js" ></script>
+    <script src="components/m-controls/m-controls-rig.js"   ></script>
   </head>
   <body>
 
     <a-scene background="color: #000000">
+
+      <a-assets>
+        <img          id="tiles"     src="media/tiles512.jpg">
+        <a-asset-item id="orion-obj" src="ships/orion_.obj"></a-asset-item>
+        <a-asset-item id="orion-mtl" src="ships/orion_.mtl"></a-asset-item>
+      </a-assets>
     
-      <a-entity id="ground" geometry="primitive: box; width: 2000; height: 0.01; depth: 2000" position="0 -20.01 0" material="color:grey"></a-entity>
+      <a-obj-model        src="#orion-obj" mtl="#orion-mtl" scale="33 33 33" position="+50 33 -100"></a-obj-model>
 
 
+
+
+ 
       <a-assets> <!-- mixin does not work with box etc. but only with entity!-->
         <a-mixin id="Terrgonit"   material="color: #4682B4" ></a-mixin>
         <a-mixin id="TerrgoniR"   material="color: #8982B4" ></a-mixin>        
@@ -35,7 +46,9 @@
         <a-mixin id="Irin4" geometry="primitive:cylinder;  height:.1; radius:24.999"; scale="1.005 1 1";                  rotation="90 0 0" mixin="segmentsRad TerrgoniR" ></a-mixin>
       </a-assets>
 
-      <a-entity id="Kugelraumer" position="0 10 -80" >
+
+      <a-entity id="Kugelraumer" position="-50 30 -100" >
+
 
         <!-- HAUPTKUGEL mit Antriebsring und Poolgeschütz -->
         <a-entity id="Hauptkugel" geometry="primitive:sphere;   radius:25"             mixin="segments128 Terrgonit"                                        ></a-entity>
@@ -64,8 +77,23 @@
                                                        <a-entity mixin="Te1S" ></a-entity>               <!-- Termostrahler             -->
                                                        <a-entity mixin="Te1C" ></a-entity>
                                                        <a-entity mixin="Te2S" ></a-entity>
-                                                       <a-entity mixin="Te2C" ></a-entity> </a-multiply>
+                                                       <a-entity mixin="Te2C" ></a-entity> </a-multiply-->
       </a-entity><!--Kugelraumer-->
+
+
+
+      <a-plane  id="ground" height="2000" width="2000" src="#tiles" repeat="50 50" rotation="-90 0 0"></a-plane>
+      
+      <a-entity star-system></a-entity>
+
+
+      <a-entity id="camera-head" 
+        camera="active: true"
+	  	  position="20 20 00"
+  	  	aframe-mcontrols-keys
+  	  	aframe-mcontrols-point
+	  	  aframe-mcontrols-rig
+        ></a-entity>
         
     </a-scene>
   </body>

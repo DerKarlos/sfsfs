@@ -1,0 +1,52 @@
+<!-- A space ship of the German SF series Perry Rhodan: Kugelraumer -->
+
+      <a-assets> <!-- mixin does not work with box etc. but only with entity!-->
+        <a-mixin id="Terrgonit"   material="color: #4682B4" ></a-mixin>
+        <a-mixin id="TerrgoniR"   material="color: #8982B4" ></a-mixin>        
+        <a-mixin id="segments32"  geometry="segments-width:32;   segments-height:16" ></a-mixin>        
+        <a-mixin id="segments128" geometry="segments-width:128;  segments-height:64" ></a-mixin>        
+        <a-mixin id="segmentsRad" geometry="segments-radial:128"                     ></a-mixin>        
+
+        <a-mixin id="Impu"  geometry="primitive:cylinder;  height:.2; radius:2"; material="color:#244162"; position="28    -3   0"; rotation="0 0  21"                    ></a-mixin>
+        <a-mixin id="Bein"  geometry="primitive:cone;      height:14; radiusBottom:0.3; radiusTop:0.7";    position="20.0 -23.5 0"; rotation="0 0  20"; mixin="Terrgonit" ></a-mixin>
+        <a-mixin id="Bunt"  geometry="primitive:cylinder;  height:.2; radius:1.0";                         position="22.3 -29.9 0";                     mixin="Terrgonit" ></a-mixin>
+        <a-mixin id="Te1S"  geometry="primitive:sphere;               radius:1.0";                         position="21.4 -12.5 0";                     mixin="Terrgonit" ></a-mixin>
+        <a-mixin id="Te1C"  geometry="primitive:cylinder;  height:.7; radius:0.2";                         position="22.4 -12.8 0"; rotation="0 0  70"; mixin="TerrgoniR" ></a-mixin>
+        <a-mixin id="Te2S"  geometry="primitive:sphere;               radius:1.0";                         position="21.4 +12.5 0";                     mixin="Terrgonit" ></a-mixin>
+        <a-mixin id="Te2C"  geometry="primitive:cylinder;  height:.7; radius:0.2";                         position="22.4 +13.1 0"; rotation="0 0 -70"; mixin="TerrgoniR" ></a-mixin>
+        <a-mixin id="Aring" geometry="primitive:cylinder;  height:.1; radius:32.";    scale="1 1 0.205";                  rotation="90 0 0" mixin="Terrgonit segmentsRad" ></a-mixin>
+        <a-mixin id="Iring" geometry="primitive:cylinder;  height:.1; radius:24.999"; scale="1.005 1 1";                  rotation="90 0 0" mixin="segmentsRad Terrgonit" ></a-mixin>
+        <a-mixin id="Irin4" geometry="primitive:cylinder;  height:.1; radius:24.999"; scale="1.005 1 1";                  rotation="90 0 0" mixin="segmentsRad TerrgoniR" ></a-mixin>
+      </a-assets>
+
+      <a-entity id="Kugelraumer" position="0 10 -80" >
+
+        <!-- HAUPTKUGEL mit Antriebsring und Poolgeschütz -->
+        <a-entity id="Hauptkugel" geometry="primitive:sphere;   radius:25"             mixin="segments128 Terrgonit"                                        ></a-entity>
+        <a-entity id="Antriebsr"  geometry="primitive:sphere;   radius:32"             mixin="            Terrgonit"  scale="1 0.2 1"                       ></a-entity>
+        <a-entity id="Poolkuppel" geometry="primitive:sphere;   radius:5."             mixin="segments32  Terrgonit"                    position="0 21.5 0" ></a-entity>
+        <a-entity id="Poolrohr"   geometry="primitive:cylinder; radius:.4; height:5.5" mixin="            TerrgoniR"  rotation="0 0 50" position="0 25 0"   ></a-entity>
+
+        <!-- Montageringe waagerecht -->
+        <a-entity id="RingO1" geometry="primitive:cylinder; radius: 9.7; height:.2"  mixin="segmentsRad TerrgoniR" position="0 +23 0" ></a-entity>
+        <a-entity id="RingO2" geometry="primitive:cylinder; radius:23.1; height:.2"  mixin="segmentsRad TerrgoniR" position="0 +10 0" ></a-entity>
+        <a-entity id="RingO3" geometry="primitive:cylinder; radius:20.3; height:.2"  mixin="segmentsRad TerrgoniR" position="0 +15 0" ></a-entity>
+        <a-entity id="RingO4" geometry="primitive:cylinder; radius:19.3; height:.2"  mixin="segmentsRad TerrgoniR" position="0 +16 0" ></a-entity>
+        <a-entity id="RingU1" geometry="primitive:cylinder; radius:19.3; height:.2"  mixin="segmentsRad TerrgoniR" position="0 -16 0" ></a-entity>
+        <a-entity id="RingU2" geometry="primitive:cylinder; radius:20.3; height:.2"  mixin="segmentsRad TerrgoniR" position="0 -15 0" ></a-entity>
+        <a-entity id="RingU3" geometry="primitive:cylinder; radius:23.1; height:.2"  mixin="segmentsRad TerrgoniR" position="0 -10 0" ></a-entity>
+        <a-entity id="RingU4" geometry="primitive:cylinder; radius: 9.7; height:.2"  mixin="segmentsRad TerrgoniR" position="0 -23 0" ></a-entity>
+
+        <!-- Rotation entities -->
+        <a-multiply ID="Imp" step ="30">               <a-entity mixin="Impu" ></a-entity> </a-multiply> <!-- Impulz-Anriebe            -->
+        <a-multiply ID="Ant" start="14">               <a-entity mixin="Aring"></a-entity> </a-multiply> <!-- Montageringe Antriebsring -->
+        <a-multiply ID="An2" start="16">               <a-entity mixin="Aring"></a-entity> </a-multiply>
+        <a-multiply ID="Sen" start="11.5" step="22.5"> <a-entity mixin="Iring"></a-entity> </a-multiply> <!-- Montageringe Senkrecht    -->
+        <a-multiply ID="x30"              step="22.5"> <a-entity mixin="Irin4"></a-entity>
+                                                       <a-entity mixin="Bein" ></a-entity>               <!-- Beine mit Landetellern    -->
+                                                       <a-entity mixin="Bunt" ></a-entity>
+                                                       <a-entity mixin="Te1S" ></a-entity>               <!-- Termostrahler             -->
+                                                       <a-entity mixin="Te1C" ></a-entity>
+                                                       <a-entity mixin="Te2S" ></a-entity>
+                                                       <a-entity mixin="Te2C" ></a-entity> </a-multiply>
+      </a-entity><!--Kugelraumer-->
