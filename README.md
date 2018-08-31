@@ -13,18 +13,16 @@ The 3D framework A-Frame is used, which works with ThreeJS which uses WebGL to s
 
 ## THE REALITY:
 
-One ship on an empty ground and default A-Frame controls. The is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter.
+Two ships on an tiled ground below starts and new A-Frame controls. The spheric ship is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter. The spiking disk is from the German TV SF series Raumpatrouille, the Fast Space Cruiser ORION.
 
 [Demo](http://ac1000.de/sfsfs/index.html) & [Source](index.html)
 
 
-![Spaceship](https://storage.gra3.cloud.ovh.net/v1/AUTH_91eb37814936490c95da7b85993cc2ff/enosmtown/media_attachments/files/000/000/512/original/cd4be8f6233a27df.png)
+![Spaceship](https://mastodonten.de/system/media_attachments/files/000/198/731/original/a4079fb5795bd598.png)
 
 
-That ship above it is build, also using an A-Frame Component "rotation-y" and sonn with "a-multiply".
-This control takes an a-entity, multiplies it and places the instances increasingly y-rotated.
+The speric ship above it is build, also using an A-Frame component "a-multiply".
+This control takes a-entities, multiplies them and places the instances increasingly y-rotated.
 This allows complex structures by less work and HTML text.
 
 [a-multiply](/components/a-multiply)
-
-
