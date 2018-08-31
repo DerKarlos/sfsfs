@@ -15,11 +15,12 @@ The 3D framework A-Frame is used, which works with ThreeJS which uses WebGL to s
 
 Two ships on an tiled ground below starts and new A-Frame controls. The spheric ship is from a German SF series Perry Rhodan: A smal "Kugelraumer" 50m diameter. The spiking disk is from the German TV SF series Raumpatrouille, the Fast Space Cruiser ORION.
 
-[Demo](http://ac1000.de/sfsfs/index.html) & [Source](index.html)
+[Source](index.html) & [Demo](http://ac1000.de/sfsfs/index.html):
 
+* Use the mouse to rotate and arrow keys or 2nd mouse to move, PageUp to elevate.
+* Press shift to rotate with keys and move with mouse.
 
 ![Spaceship](https://mastodonten.de/system/media_attachments/files/000/198/731/original/a4079fb5795bd598.png)
-
 
 The speric ship above it is build, also using an A-Frame component "a-multiply".
 This control takes a-entities, multiplies them and places the instances increasingly y-rotated.
