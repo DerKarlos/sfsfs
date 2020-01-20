@@ -341,7 +341,8 @@
 
 
     class Space {
-        constrtuctor(scene) {
+
+        constructor(scene) {
             this.scene = scene;
         }
 
@@ -360,6 +361,7 @@
             }
         }
 
+        //// set some gates to fly throu
         gates(count,rotation) {
             // show a "tunnel"
             var tor = BABYLON.MeshBuilder.CreateTorus("", {diameter: 4, thickness: 0.05, tessellation: 4}, this.scene);
@@ -375,8 +377,23 @@
             }
         }
 
+        skyDome() { // This is so much more easy with BabylonJS
+        	// ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
+        	var    sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/sky.jpg', {size: 5000}, this.scene); //bbb resolution: 64,size: radius*2
+        	       sky.infiniteDistance = true;
+            // Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid.
+        	return sky;
+        }
 
-    }
+
+
+    }//Space
+
+
+
+
+
+
 
 
     ///////////// MAIN /////////////////////////////////
@@ -407,10 +424,11 @@
     vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
     vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
-
     var space = new Space(scene);
-    space.grid(4,4,0.1);
+    space.grid(2,8,0.5);
     space.gates(12,4);
+    space.skyDome();
+
 
     var xwing = loadGlb("xwing_t65",scene,function(xwing){
         xwing.rotation.y = rad(90);
