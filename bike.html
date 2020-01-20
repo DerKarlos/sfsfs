@@ -1,0 +1,438 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <title>Space Bike</title>
+    <style>
+    html, body { overflow:   hidden;    width: 100%;    height: 100%;     margin: 0;    padding: 0;    }
+    #viewer    { touch-action: none;    width: 100%;    height: 100%;                            }
+    </style>
+</head>
+<body>
+
+    <canvas id='viewer' />
+    <script src ='../lib/babylon.max.js'> </script>
+    <script src ='../lib/babylonjs.loaders.min.js'> </script>
+    <script type='module'>
+
+    /**/
+    // To see errors on touch devices, activate this Errorhandler producing alert dialogs
+    window.onerror = function(msg,url,line){
+        alert(msg+'\n'+url+'\nLine: '+line)
+        return true
+    }
+    /**/
+
+
+
+    /*
+        https://www.babylonjs-playground.com/#PYTAP9#2
+    */
+
+    function rad(degrees)    { return degrees * (Math.PI/180); }
+    function grad(rad)       { return rad     / (Math.PI/180); }
+
+    function setDeadZone(value) {
+        const DEADZONE = 0.2;
+
+        // If stick value is smaller than dead zone, give it a value of 0
+        // Math.abs() makes it work regardless of positive or negative value
+        if (Math.abs(value) < DEADZONE) {
+
+            return value = 0;
+
+        } else {
+            // We are outside the dead zone: substract deadzoone
+            value = value - Math.sign(value) * DEADZONE;
+
+            // Normalize the values between 0 and 1
+            value /= (1.0 - DEADZONE);
+
+            return value;
+
+        }
+    }
+
+
+    function loadGlb(name,scene,success) {
+
+        BABYLON.Tools.corsbehavior = "anonymous";   // FileTools.CorsBehavior = “credentials”  /  "anonymous"   ??? videoTexture.video.crossOrigin = "anonymous";
+        BABYLON.SceneLoader.ImportMesh('', '../models/', name+'.glb', scene, // wheelchair aufgabe_orion radiatoren
+            /* onSuccess: */ function (newMeshes) {
+                // how do avoid to see the array for a moment???  It should also be noted that a mesh with a layerMask of 0, can never be seen by anyone. This might be good for hiding things.
+                console.log("loaded: "+name);
+                var glb = new BABYLON.Mesh(name, scene);
+                for(var index in newMeshes) {
+                    var mesh = newMeshes[index]; //console.log("o." + index + " = " + mesh);
+                    glb.addChild(mesh);
+                }
+                if(success)
+                    success(glb);
+            }.bind(this),
+            /* onProgress: */ function (event) {   console.log("model loaded: ", Math.floor(event.loaded/event.total*100)+"%") },
+            /* onError:    */ function (event) {   console.log("onError:"+name,event) }
+        );//ImportMesh
+
+    }
+
+    class Ramp { ////////////////////////////////////////////////// Ramp (helper CLASS) ////////////////////////////////////////////
+
+        constructor(up,down,initValue) {
+            if(!up)   up   = 1;
+            if(!down) down = up;
+            if(!initValue) initValue = 0;
+            this.up     = up;
+            this.down   = down;
+            this.actual = initValue;
+        }
+
+
+        reset() {
+            this.actual = 0
+        }
+
+
+        ramping(set,dt) {
+
+            var delta = set-this.actual;
+            var abs   = Math.abs( delta);
+            var sign  = Math.sign(delta);
+            var ramp  = (sign==Math.sign(this.actual)) ? this.up : this.down;
+            if( abs   > ramp*dt)
+                abs   = ramp*dt;
+            delta     = abs * sign;
+
+            this.actual += delta;
+            return this.actual;
+        }
+
+
+    }//class ramp
+
+
+    class Ramp3 {
+        constructor() {
+            this.x = new Ramp();
+            this.y = new Ramp();
+            this.z = new Ramp();
+            this.actual = new BABYLON.Vector3();
+        }
+
+        ramping(x,y,z,dt) {
+            this.actual.x = this.x.ramping(x, dt);
+            this.actual.y = this.y.ramping(y, dt);
+            this.actual.z = this.z.ramping(z, dt);
+            return this.actual;
+        }
+
+        reset() {
+            this.x.reset();
+            this.y.reset();
+            this.z.reset();
+        }
+
+    }
+
+
+    class Control {
+
+        constructor(engine, vrHelper){
+
+            this.keyLeftRight  = 0;
+            this.keyUpDown     = 0;
+            this.keyPagePS     = 0; // Page Up/Down = Plus/Sharpe-Keys
+            this.keyMPoint     = 0; //                Minus/Point-Keys
+            this.joystick      = new BABYLON.Vector3();
+
+            this.speedPosition = new BABYLON.Vector3();
+            this.speedRotation = new BABYLON.Vector3();
+            this.rampPosition  = new Ramp3();
+            this.rampRotation  = new Ramp3();
+
+            document.addEventListener("keydown", this.onKeyDown.bind(this), false);
+            document.addEventListener("keyup",   this.onKeyUp.bind(this),   false);
+            window.addEventListener(  "resize",  function(){ engine.resize(); }  );
+
+
+            //// Oclus controls
+            vrHelper.onControllerMeshLoaded.add((webVRController)=>{
+                control.joystick.x = 0.1;
+                // buttons
+                webVRController.onBButtonStateChangedObservable.add((stateObject)=>{
+                    // if(webVRController.hand ==='right') -- enable both controller       Y <=> B
+                    this.resetPositionAndRotation();
+                });
+
+                webVRController.onAButtonStateChangedObservable.add((stateObject)=>{ //    X <=> A
+                    this.stop = true;
+                    // speed = shift = rise = 0;
+                });
+
+                webVRController.onPadStateChangedObservable.add((stateObject)=>{
+                    //???
+                });
+
+                webVRController.onTriggerStateChangedObservable.add((stateObject)=>{
+                    this.joystick.z = stateObject.value;
+                });
+
+                webVRController.onSecondaryTriggerStateChangedObservable.add((stateObject)=>{
+                    this.joystick.z = -stateObject.value;
+                });
+
+                // joystick:
+                webVRController.onPadValuesChangedObservable.add((stateObject)=>{
+                    // if(webVRController.hand ==='right') -- enable both controller
+                    {
+                        control.joystick.x = stateObject.x;
+                        control.joystick.y = stateObject.y;
+                    }
+                }); // onPadValuesChangedObservable
+
+            });     // onControllerMeshLoaded
+
+
+        }// constructor
+
+
+        resetPositionAndRotation() {
+            this.rampPosition.reset();
+            this.rampRotation.reset();
+            this.speedPosition = BABYLON.Vector3.Zero();
+            this.speedRotation = BABYLON.Vector3.Zero();
+            bike.resetPositionAndRotation();
+        }
+
+
+        onKeyDown(evt) {
+            switch (evt.keyCode) {
+                case  13: this.resetPositionAndRotation(); break; // return
+                case  32: this.stop = true;                break; // space
+                case  39: this.keyLeftRight = +1;          break; // right
+                case  37: this.keyLeftRight = -1;          break; // left
+                case  38: this.keyUpDown    = +1;          break; // up
+                case  40: this.keyUpDown    = -1;          break; // down
+                case 163: this.keyPagePS    = +1;          break; // +
+                case 171: this.keyPagePS    = -1;          break; // #
+                case 173: this.keyMPoint    = +1;          break; // -
+                case 190: this.keyMPoint    = -1;          break; // .
+                default: console.log(evt.keyCode);
+            }
+        }
+
+        onKeyUp(evt) {
+            switch (evt.keyCode) {
+                case  32:           this.stop = false;      break;
+                case  39: case  37: this.keyLeftRight =  0; break;
+                case  38: case  40: this.keyUpDown    =  0; break;
+                case 163: case 171: this.keyPagePS    =  0; break;
+                case 173: case 190: this.keyMPoint    =  0; break;
+            }
+        }
+
+        animate(dSec) {
+
+            var accelInputX  = setDeadZone(this.joystick.x) * +1; // +/- 0.2 to 1.0  becomes  0.0 to 1.0
+            var accelInputY  = setDeadZone(this.joystick.y) * -1;
+            var accelInputZ  = setDeadZone(this.joystick.z) * +1;
+
+            if(this.stop) {
+                var factor = 1 - dSec*4;
+                this.speedPosition.scaleInPlace(factor);
+                this.speedRotation.scaleInPlace(factor);
+
+                if(this.speedPosition.length + this.speedRotation.length < 0.01) {
+                    this.stop = false;
+                    this.speedPosition = BABYLON.Vector3.Zero();
+                    this.speedRotation = BABYLON.Vector3.Zero();
+                }
+            }
+
+            //if(Math.abs(shift)>0.1) accelInputX = 0;
+            //if(Math.abs(rise )>0.1) accelInputZ = 0;
+
+            var accelerationPosition = this.rampPosition.ramping(
+                0,                           // shift
+                0,                           // rise
+                +accelInputY+this.keyUpDown, // speed
+                dSec);
+
+            var accelerationRotation = this.rampRotation.ramping(
+                -accelInputZ+this.keyPagePS,    // v^   roll  z
+                +accelInputX+this.keyLeftRight, // <>   pitch x
+                0           +this.keyMPoint,    // ()   yaw   y
+                dSec);
+
+
+            var accelerationPosition2 = accelerationPosition.multiplyByFloats(1,1,5);
+            var matrix = bike.root.getWorldMatrix().getRotationMatrix();
+            var accelerationPosition3 = BABYLON.Vector3.TransformCoordinates(accelerationPosition2, matrix);  // applyEuler
+
+            if(false) { // real space
+                this.speedPosition.addInPlace(accelerationPosition3.scaleInPlace(0.001));
+                this.speedRotation.addInPlace(accelerationRotation .scaleInPlace(0.0001));
+                var limit = 0.01;
+                var min = new BABYLON.Vector3(-limit,-limit,-limit);
+                var max = new BABYLON.Vector3(+limit,+limit,+limit);
+                this.speedRotation = BABYLON.Vector3.Clamp(this.speedRotation,min,max);
+            } else { // fake space stopping
+                this.speedPosition.copyFrom(accelerationPosition3.scaleInPlace(0.01));
+                this.speedRotation.copyFrom(accelerationRotation .scaleInPlace(0.01));
+            }
+
+            bike.animate( this.speedPosition, this.speedRotation );
+
+        }
+
+    }
+
+    class Bike {
+
+        constructor(scene) {
+
+            //// Space Bike (root, body and camera position)
+            this.root = new BABYLON.TransformNode("root", scene);
+            this.resetPositionAndRotation();
+
+            var body = BABYLON.MeshBuilder.CreateCylinder("body", {height: 3, diameterTop: 0.2, diameterBottom: 1, tessellation: 16}, scene);
+            body.rotation.x = rad(90);
+            body.parent     = this.root;
+            body.position.z = +0.5;
+
+            var handle = BABYLON.MeshBuilder.CreateCylinder("handle", {height: 1, diameterTop: 0.025, diameterBottom: 0.025, tessellation: 16}, scene);
+            handle.rotation.z = rad(90);
+            handle.parent     = this.root;
+            handle.position.y = +0.6;
+            handle.position.z = +0.4;
+
+            this.camPos = BABYLON.MeshBuilder.CreateBox("", {size: 0.1},  scene); // Why no TransformNode?
+            this.camPos.parent     = this.root;
+            this.camPos.position.y = +0.8   ;
+
+        }
+
+        resetPositionAndRotation() {
+            this.root.position           = BABYLON.Vector3.Zero()
+            this.root.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, 0.00001/*Why is 0 so od in Babslon???*/, 0);
+        }
+
+        // move is part of the controls but is done direct by the bike mash
+        animate( speedPosition, speedRotation ){
+
+            this.root.position.addInPlace(speedPosition);
+
+            //// Quaterion=>Euler and add and Euler=>Quaterion:  (stops looking to top!)
+            //var rotation = this.root.rotationQuaternion.toEulerAngles();
+            //rotation.addInPlace(speedRotation);
+            //this.root.rotationQuaternion = BABYLON.Quaternion.FromEulerVector(rotation);
+
+            this.root.rotate(BABYLON.Axis.Y, speedRotation.y, BABYLON.Space.LOCAL);
+            this.root.rotate(BABYLON.Axis.X, speedRotation.x, BABYLON.Space.LOCAL); // not .WORLD
+            this.root.rotate(BABYLON.Axis.Z, speedRotation.z, BABYLON.Space.LOCAL);
+
+            // NO!:  https://doc.babylonjs.com/resources/rotation_conventions#euler-angles-to-quaternions
+            // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
+
+            setCamera(  this.camPos.absolutePosition,
+                        this.root.rotationQuaternion );
+        }
+
+    }
+
+
+    class Space {
+        constrtuctor(scene) {
+            this.scene = scene;
+        }
+
+        //// "show" the space
+        grid(plusMinus,distance,size) {
+            var dot = BABYLON.MeshBuilder.CreateBox("", {size: size},  this.scene);
+            for(        var z=-plusMinus ; z<+plusMinus ; z++) {
+                for(    var y=-plusMinus ; y<+plusMinus ; y++) {
+                    for(var x=-plusMinus ; x<+plusMinus ; x++) {
+                        var d = dot.clone("");
+                        d.position.x = x * distance;
+                        d.position.y = y * distance;
+                        d.position.z = z * distance;
+                    }
+                }
+            }
+        }
+
+        gates(count,rotation) {
+            // show a "tunnel"
+            var tor = BABYLON.MeshBuilder.CreateTorus("", {diameter: 4, thickness: 0.05, tessellation: 4}, this.scene);
+            tor.rotation.x = rad(45);
+            tor.rotation.y = rad(90);
+            tor.rotation.z = rad(90);
+            tor.position.z = +4;
+            //r.scaling    = new BABYLON.Vector3(0.3,0.3,1)
+            for(var z=1 ; z<count ; z++) {
+                var t = tor.clone("");
+                t.position.z = 4+z*2;
+                t.rotation.x += rad(z*rotation);
+            }
+        }
+
+
+    }
+
+
+    ///////////// MAIN /////////////////////////////////
+
+    var vrHelper = undefined;
+    var bike     = undefined; // local?
+    var control  = undefined;
+
+    function setCamera(absolutePosition, rotationQuaternion) {
+        var camera = vrHelper.currentVRCamera;        // if(vrHelper.isInVRMode)
+        camera.position           = absolutePosition;
+        camera.rotationQuaternion = rotationQuaternion;
+    }
+
+
+
+
+    window.addEventListener('DOMContentLoaded', function() {
+
+    //// INIT
+    var canvas = document.getElementById('viewer');
+    var engine = new BABYLON.Engine(canvas, true);
+    var scene  = new BABYLON.Scene(engine);
+    var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0,1,  0), scene);
+
+    vrHelper = scene.createDefaultVRExperience();
+    vrHelper.currentVRCamera.minZ /= 2; // to show the bike close by
+    vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
+    vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
+
+
+    var space = new Space(scene);
+    space.grid(4,4,0.1);
+    space.gates(12,4);
+
+    var xwing = loadGlb("xwing_t65",scene,function(xwing){
+        xwing.rotation.y = rad(90);
+        xwing.position.z = -15; // -4
+    });
+
+    bike    = new Bike(scene);
+    control = new Control(engine, vrHelper);
+
+    //// RENDER CYCLE
+    engine.runRenderLoop(function() {
+        control.animate( engine._deltaTime / 1000 ); //dSec
+
+        scene.render();
+    });
+
+
+
+    });// DOMContentLoaded
+
+
+    </script>
+
+</body>
+</html>
