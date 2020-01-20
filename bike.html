@@ -11,12 +11,12 @@
 <body>
 
     <canvas id='viewer' />
-    <script src ='../lib/babylon.max.js'> </script>
-    <script src ='../lib/babylonjs.loaders.min.js'> </script>
+    <script src ='lib/babylon.max.js'> </script>
+    <script src ='lib/babylonjs.loaders.min.js'> </script>
     <script type='module'>
 
     /**/
-    // To see errors on touch devices, activate this Errorhandler producing alert dialogs
+    // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
     window.onerror = function(msg,url,line){
         alert(msg+'\n'+url+'\nLine: '+line)
         return true
@@ -57,7 +57,7 @@
     function loadGlb(name,scene,success) {
 
         BABYLON.Tools.corsbehavior = "anonymous";   // FileTools.CorsBehavior = “credentials”  /  "anonymous"   ??? videoTexture.video.crossOrigin = "anonymous";
-        BABYLON.SceneLoader.ImportMesh('', '../models/', name+'.glb', scene, // wheelchair aufgabe_orion radiatoren
+        BABYLON.SceneLoader.ImportMesh('', 'ships/', name+'.glb', scene, // wheelchair aufgabe_orion radiatoren
             /* onSuccess: */ function (newMeshes) {
                 // how do avoid to see the array for a moment???  It should also be noted that a mesh with a layerMask of 0, can never be seen by anyone. This might be good for hiding things.
                 console.log("loaded: "+name);
@@ -216,7 +216,7 @@
                 case 171: this.keyPagePS    = -1;          break; // #
                 case 173: this.keyMPoint    = +1;          break; // -
                 case 190: this.keyMPoint    = -1;          break; // .
-                default: console.log(evt.keyCode);
+                default: console.log("KEY: "+evt.keyCode);
             }
         }
 
