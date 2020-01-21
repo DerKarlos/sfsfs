@@ -379,7 +379,7 @@
 
         skyDome() { // This is so much more easy with BabylonJS
         	// ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
-        	var    sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/sky.jpg', {size: 5000}, this.scene); //bbb resolution: 64,size: radius*2
+        	var    sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/sky.jpg', {size: 20000}, this.scene); //bbb resolution: 64,size: radius*2
         	       sky.infiniteDistance = true;
             // Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid.
         	return sky;
@@ -391,6 +391,56 @@
 
 
 
+    class Earth {
+
+        constructor(scene) {
+            this.scene = scene;
+
+/** /
+            var textureLoader = new THREE.TextureLoader();
+
+            var radius   = 6378137 // m Meter   Erdradius: 6.378.137m
+            var geometry = new THREE.SphereBufferGeometry( radius, 64, 64 );
+            var material = new THREE.MeshBasicMaterial( {color: 0x0080ff} );
+            material.transparent = true;
+            material.opacity = 0.0;
+            material.map = new THREE.TextureLoader().load( "4096_earth.jpg",
+            	function ( texture ) { cocpit.Out( [                                 'ERDE ganz geladen'] ); } // onLoaded
+            //function ( texture ) { cocpit.Out( [Math.round(percentComplete, 2) + '% Erde downloaded'] ); } // onProgress callback currently not supported!
+            );
+
+            material.map = textureLoader.load( "4096_earth.jpg" );  // https://free3d.com/3d-model/planet-earth-99065.html
+/**/
+
+            var sphere   = new THREE.Mesh( geometry, material );
+            sphere.position.y = -radius -400*1000 // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
+            sphere.rotation.y = Math.PI / 180 * (-90 - 30)   //- 90 + 0;
+            sphere.rotation.x = Math.PI / 180 * (-90 + 46)  //- 90 * 0//48;
+            this.sphere = sphere;
+            return this
+        }
+
+
+
+
+      animate(dSec,mode) {
+
+        this.sphere.rotation.y += 0.00005;
+
+        /** /
+        if(sphere.material && sphere.material.map) {
+          if(sphere.material.opacity < 1.0) {
+             sphere.material.opacity += 0.002;
+          } else {
+            sphere.material.transparent = false;
+          }
+        }
+        /**/
+
+      }//animate
+
+
+  }//Earth
 
 
 
