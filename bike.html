@@ -379,12 +379,19 @@
 
         skyDome() { // This is so much more easy with BabylonJS
         	// ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
-        	var    sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/sky.jpg', {size: 20000}, this.scene); //bbb resolution: 64,size: radius*2
-        	       sky.infiniteDistance = true;
+        	this.sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/sky.jpg', {size: vrHelper.currentVRCamera.maxZ*0.9}, this.scene); //bbb resolution: 64,size: radius*2
+        	this.sky.infiniteDistance = true;
             // Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid.
-        	return sky;
+            this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
+        	return this.sky;
         }
 
+
+
+        animate = function(dSec) {
+
+
+      }//animate
 
 
     }//Space
@@ -396,10 +403,10 @@
         constructor(scene) {
             this.scene = scene;
 
+            var radius   = 63781.37*8 // m Meter   Erdradius: 6.378.137m
 /** /
             var textureLoader = new THREE.TextureLoader();
 
-            var radius   = 6378137 // m Meter   Erdradius: 6.378.137m
             var geometry = new THREE.SphereBufferGeometry( radius, 64, 64 );
             var material = new THREE.MeshBasicMaterial( {color: 0x0080ff} );
             material.transparent = true;
@@ -412,20 +419,25 @@
             material.map = textureLoader.load( "4096_earth.jpg" );  // https://free3d.com/3d-model/planet-earth-99065.html
 /**/
 
-            var sphere   = new THREE.Mesh( geometry, material );
-            sphere.position.y = -radius -400*1000 // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
-            sphere.rotation.y = Math.PI / 180 * (-90 - 30)   //- 90 + 0;
-            sphere.rotation.x = Math.PI / 180 * (-90 + 46)  //- 90 * 0//48;
-            this.sphere = sphere;
+            var material = new BABYLON.StandardMaterial("EarthMaterial", scene);
+            material.diffuseTexture = new BABYLON.Texture('./media/4096_earth.jpg', scene);
+            this.sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter:radius*2}, scene);
+            this.sphere.material = material;
+            this.sphere.position.x = radius +400*1000 // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
+            this.sphere.rotation.z = rad(180); // Why is the texture upside down ???
+//          this.sphere.rotation.z = rad( 46)
+//          this.sphere.rotation.x = Math.PI / 180 * (-90 - 46) //- 90 * 0//48;
+//          this.sphere.rotation.z = Math.PI / 180 * (-90  + .30) //- 90 + 0;    rotate Europe on top
+            this.sphere.material = material;
             return this
         }
 
 
 
 
-      animate(dSec,mode) {
+      animate(dSec) {
 
-        this.sphere.rotation.y += 0.00005;
+        this.sphere.rotation.y += 0.0005;
 
         /** /
         if(sphere.material && sphere.material.map) {
@@ -450,6 +462,7 @@
 
     var vrHelper = undefined;
     var bike     = undefined; // local?
+    var earth    = undefined;
     var control  = undefined;
 
     function setCamera(absolutePosition, rotationQuaternion) {
@@ -469,8 +482,12 @@
     var scene  = new BABYLON.Scene(engine);
     var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0,1,  0), scene);
 
+    scene.clearColor = BABYLON.Color3.Black();
+
     vrHelper = scene.createDefaultVRExperience();
-    vrHelper.currentVRCamera.minZ /= 2; // to show the bike close by
+    vrHelper.currentVRCamera.minZ /=     2; // to show the bike close by
+    vrHelper.currentVRCamera.maxZ *= 10000; // to show the far away earth. Default: 10000. * 10000 = much!
+
     vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
     vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
@@ -479,6 +496,7 @@
     space.gates(12,4);
     space.skyDome();
 
+    earth = new Earth();
 
     var xwing = loadGlb("xwing_t65",scene,function(xwing){
         xwing.rotation.y = rad(90);
@@ -490,7 +508,10 @@
 
     //// RENDER CYCLE
     engine.runRenderLoop(function() {
-        control.animate( engine._deltaTime / 1000 ); //dSec
+        var dSec = engine._deltaTime / 1000
+        control.animate(dSec);
+          space.animate(dSec);
+          earth.animate(dSec);
 
         scene.render();
     });
