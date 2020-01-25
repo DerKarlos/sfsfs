@@ -486,8 +486,9 @@
 
         scene.clearColor = BABYLON.Color3.Black();
 
-        var fNEAR = 2;      // to show the bike close by
-        var fFAR  = 10000   // to show the far away earth. Default: 10'000. * 10'000 = much!
+        var fNEAR = 2;                      // to show the bike close by
+        var fFAR  = 100*1000*1000*1000      // to show the far away earth. Default: 10'000
+
         vrHelper = scene.createDefaultVRExperience();
         vrHelper.deviceOrientationCamera.minZ   /= fNEAR
         vrHelper.deviceOrientationCamera.maxZ   *= fFAR
