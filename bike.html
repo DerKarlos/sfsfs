@@ -423,7 +423,7 @@
             material.diffuseTexture = new BABYLON.Texture('./media/4096_earth.jpg', scene);
             this.sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter:radius*2}, scene);
             this.sphere.material = material;
-            this.sphere.position.x = radius +400*1000 // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
+            this.sphere.position.x = -(radius+400*1000) // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
             this.sphere.rotation.z = rad(180); // Why is the texture upside down ???
 //          this.sphere.rotation.z = rad( 46)
 //          this.sphere.rotation.x = Math.PI / 180 * (-90 - 46) //- 90 * 0//48;
@@ -460,8 +460,10 @@
 
     ///////////// MAIN /////////////////////////////////
 
+    var seconds  = 0;
     var vrHelper = undefined;
     var bike     = undefined; // local?
+    var xwing    = undefined;
     var earth    = undefined;
     var control  = undefined;
 
@@ -476,46 +478,65 @@
 
     window.addEventListener('DOMContentLoaded', function() {
 
-    //// INIT
-    var canvas = document.getElementById('viewer');
-    var engine = new BABYLON.Engine(canvas, true);
-    var scene  = new BABYLON.Scene(engine);
-    var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0,1,  0), scene);
+        //// INIT
+        var canvas = document.getElementById('viewer');
+        var engine = new BABYLON.Engine(canvas, true);
+        var scene  = new BABYLON.Scene(engine);
+        var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0,1,  0), scene);
 
-    scene.clearColor = BABYLON.Color3.Black();
+        scene.clearColor = BABYLON.Color3.Black();
 
-    vrHelper = scene.createDefaultVRExperience();
-    vrHelper.currentVRCamera.minZ /=     2; // to show the bike close by
-    vrHelper.currentVRCamera.maxZ *= 10000; // to show the far away earth. Default: 10000. * 10000 = much!
+        var fNEAR = 2;      // to show the bike close by
+        var fFAR  = 10000   // to show the far away earth. Default: 10'000. * 10'000 = much!
+        vrHelper = scene.createDefaultVRExperience();
+        vrHelper.deviceOrientationCamera.minZ   /= fNEAR
+        vrHelper.deviceOrientationCamera.maxZ   *= fFAR
+        vrHelper.vrDeviceOrientationCamera.minZ /= fNEAR
+        vrHelper.vrDeviceOrientationCamera.maxZ *= fFAR
+        vrHelper.webVRCamera.minZ               /= fNEAR
+        vrHelper.webVRCamera.maxZ               *= fFAR
 
-    vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
-    vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
+//      deviceOrientationCamera // 2d
+//      vrDeviceOrientationCamera // cardboard
+//      webVRCamera // Oculus
+//      currentVRCamera //
 
-    var space = new Space(scene);
-    space.grid(2,8,0.5);
-    space.gates(12,4);
-    space.skyDome();
+        vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
+        vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
-    earth = new Earth();
+        var space = new Space(scene);
+        space.grid(2,8,0.5);
+        space.gates(12,4);
+        space.skyDome();
 
-    var xwing = loadGlb("xwing_t65",scene,function(xwing){
-        xwing.rotation.y = rad(90);
-        xwing.position.z = -15; // -4
-    });
+        earth = new Earth();
 
-    bike    = new Bike(scene);
-    control = new Control(engine, vrHelper);
+        loadGlb("xwing_t65",scene,function(glb){
+            xwing = glb;
+            xwing.rotation.y = rad(90);
+            xwing.position.z = -15; // -4
+        });
 
-    //// RENDER CYCLE
-    engine.runRenderLoop(function() {
-        var dSec = engine._deltaTime / 1000
-        control.animate(dSec);
-          space.animate(dSec);
-          earth.animate(dSec);
+        bike    = new Bike(scene);
+        control = new Control(engine, vrHelper);
 
-        scene.render();
-    });
+        //// RENDER CYCLE
+        engine.runRenderLoop(function() {
+            var dSec = engine._deltaTime / 1000
+            seconds += dSec;
 
+            control.animate(dSec);
+            space.animate(dSec);
+            earth.animate(dSec);
+
+            if(xwing) {
+                var s = seconds*10 % (Math.PI*2)
+                var d = Math.sin(s) / 500;
+                xwing.position.y += d;
+            }
+
+            scene.render();
+        });
 
 
     });// DOMContentLoaded
