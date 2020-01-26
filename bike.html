@@ -305,7 +305,7 @@
             handle.position.y = +0.6;
             handle.position.z = +0.4;
 
-            this.camPos = BABYLON.MeshBuilder.CreateBox("", {size: 0.1},  scene); // Why no TransformNode?
+            this.camPos = BABYLON.MeshBuilder.CreateBox("", {size: 0.001},  scene); // Why no TransformNode?
             this.camPos.parent     = this.root;
             this.camPos.position.y = +0.8   ;
 
@@ -361,8 +361,38 @@
             }
         }
 
+
+        //// mine wall
+        mines(x,plusMinus,distance) {
+            var dia = 0.4;
+            var big = dia*1.7;
+            var sml = dia/10.;
+            var min0 = BABYLON.MeshBuilder.CreateSphere("mn", {diameter:dia}, this.scene);
+            var box1 = BABYLON.MeshBuilder.CreateBox(   "b1", {height:big, width:sml, depth:sml},  this.scene);
+            var box2 = BABYLON.MeshBuilder.CreateBox(   "b2", {height:sml, width:big, depth:sml},  this.scene);
+            var box3 = BABYLON.MeshBuilder.CreateBox(   "b3", {height:sml, width:sml, depth:big},  this.scene);
+
+            var red = new BABYLON.StandardMaterial("red", this.scene);  red.ambientColor = red.diffuseColor = BABYLON.Color3.Red();
+            box1.material =
+            box2.material =
+            box3.material =
+            min0.material = red;
+            var mine = BABYLON.Mesh.MergeMeshes([min0,box1,box2,box3]);
+
+            for(    var z=-plusMinus ; z<+plusMinus ; z++) {
+                for(var y=-plusMinus ; y<+plusMinus ; y++) {
+                    var m = mine.clone("");
+                    m.position.x = x;
+                    m.position.y = y * distance;
+                    m.position.z = z * distance;
+                }
+            }
+            mine.position.z = 100;
+        }
+
+
         //// set some gates to fly throu
-        gates(count,rotation) {
+        gates(count,rotation,dist) {
             // show a "tunnel"
             var tor = BABYLON.MeshBuilder.CreateTorus("", {diameter: 4, thickness: 0.05, tessellation: 4}, this.scene);
             tor.rotation.x = rad(45);
@@ -372,7 +402,7 @@
             //r.scaling    = new BABYLON.Vector3(0.3,0.3,1)
             for(var z=1 ; z<count ; z++) {
                 var t = tor.clone("");
-                t.position.z = 4+z*2;
+                t.position.z = 4+z*dist;
                 t.rotation.x += rad(z*rotation);
             }
         }
@@ -403,7 +433,7 @@
         constructor(scene) {
             this.scene = scene;
 
-            var radius   = 63781.37*8 // m Meter   Erdradius: 6.378.137m
+            var radius   = 63781.37*8/9 // m Meter   Erdradius: 6.378.137m
 /** /
             var textureLoader = new THREE.TextureLoader();
 
@@ -423,7 +453,7 @@
             material.diffuseTexture = new BABYLON.Texture('./media/4096_earth.jpg', scene);
             this.sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter:radius*2}, scene);
             this.sphere.material = material;
-            this.sphere.position.x = -(radius+400*1000) // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
+            this.sphere.position.x = -(radius+400*1000          /100            ) // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
             this.sphere.rotation.z = rad(180); // Why is the texture upside down ???
 //          this.sphere.rotation.z = rad( 46)
 //          this.sphere.rotation.x = Math.PI / 180 * (-90 - 46) //- 90 * 0//48;
@@ -437,7 +467,7 @@
 
       animate(dSec) {
 
-        this.sphere.rotation.y += 0.0005;
+        this.sphere.rotation.y += 0.00001;
 
         /** /
         if(sphere.material && sphere.material.map) {
@@ -506,8 +536,10 @@
         vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
         var space = new Space(scene);
-        space.grid(2,8,0.5);
-        space.gates(12,4);
+//      space.grid(2,8,0.5);
+
+        space.mines(29,10,5)
+        space.gates(12, 4,5);
         space.skyDome();
 
         earth = new Earth();
