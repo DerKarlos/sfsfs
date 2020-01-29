@@ -154,7 +154,7 @@
             window.addEventListener(  "resize",  function(){ engine.resize(); }  );
 
 
-            //// Oclus controls
+            //// Oclus controls      https://playground.babylonjs.com/#0IBX3Y#1
             vrHelper.onControllerMeshLoaded.add((webVRController)=>{
                 control.joystick.x = 0.1;
                 // buttons
@@ -164,8 +164,13 @@
                 });
 
                 webVRController.onAButtonStateChangedObservable.add((stateObject)=>{ //    X <=> A
-                    this.stop = true;
-                    // speed = shift = rise = 0;
+                    if(stateObject.pressed === true){
+                        this.stop = true;
+                    } else {
+                        this.stop = false;
+                    }
+
+
                 });
 
                 webVRController.onPadStateChangedObservable.add((stateObject)=>{
@@ -237,7 +242,7 @@
             var accelInputZ  = setDeadZone(this.joystick.z) * +1;
 
             if(this.stop) {
-                var factor = 1 - dSec*4;
+                var factor = 1 - dSec*1;
                 this.speedPosition.scaleInPlace(factor);
                 this.speedRotation.scaleInPlace(factor);
 
@@ -247,9 +252,6 @@
                     this.speedRotation = BABYLON.Vector3.Zero();
                 }
             }
-
-            //if(Math.abs(shift)>0.1) accelInputX = 0;
-            //if(Math.abs(rise )>0.1) accelInputZ = 0;
 
             var accelerationPosition = this.rampPosition.ramping(
                 0,                           // shift
@@ -268,19 +270,34 @@
             var matrix = bike.root.getWorldMatrix().getRotationMatrix();
             var accelerationPosition3 = BABYLON.Vector3.TransformCoordinates(accelerationPosition2, matrix);  // applyEuler
 
-            if(false) { // real space
+            var cameraOffset = BABYLON.Vector3.TransformCoordinates(bike.cameraOffset, matrix);
+
+            switch("mix") {
+                case "fake":
+                this.speedPosition.copyFrom(accelerationPosition3  .scaleInPlace(0.01));
+                this.speedRotation.copyFrom(accelerationRotation   .scaleInPlace(0.01));
+                break;
+
+                case "mix":
                 this.speedPosition.addInPlace(accelerationPosition3.scaleInPlace(0.001));
+                this.speedRotation.copyFrom(accelerationRotation   .scaleInPlace(0.010));
+                break;
+
+                case "real":
+                this.speedPosition.addInPlace(accelerationPosition3.scaleInPlace(0.0010));
                 this.speedRotation.addInPlace(accelerationRotation .scaleInPlace(0.0001));
                 var limit = 0.01;
                 var min = new BABYLON.Vector3(-limit,-limit,-limit);
                 var max = new BABYLON.Vector3(+limit,+limit,+limit);
                 this.speedRotation = BABYLON.Vector3.Clamp(this.speedRotation,min,max);
+                break;
+
+            }
+            if(true) { // real space
             } else { // fake space stopping
-                this.speedPosition.copyFrom(accelerationPosition3.scaleInPlace(0.01));
-                this.speedRotation.copyFrom(accelerationRotation .scaleInPlace(0.01));
             }
 
-            bike.animate( this.speedPosition, this.speedRotation );
+            bike.animate( this.speedPosition, this.speedRotation, cameraOffset );
 
         }
 
@@ -307,7 +324,14 @@
 
             this.camPos = BABYLON.MeshBuilder.CreateBox("", {size: 0.001},  scene); // Why no TransformNode?
             this.camPos.parent     = this.root;
-            this.camPos.position.y = +0.8   ;
+            this.camPos.position.y = +0.8;
+
+            this.cameraOffset = new BABYLON.Vector3(0, 0.8, 0);
+
+//          vrHelper.deviceOrientationCamera  .parent = this.root;
+//          vrHelper.vrDeviceOrientationCamera.parent = this.root;
+//          vrHelper.webVRCamera              .parent = this.root;
+
 
         }
 
@@ -317,14 +341,11 @@
         }
 
         // move is part of the controls but is done direct by the bike mash
-        animate( speedPosition, speedRotation ){
+        animate( speedPosition, speedRotation, cameraOffset ){
+
+            var cameraPosition = this.root.position.add(cameraOffset);
 
             this.root.position.addInPlace(speedPosition);
-
-            //// Quaterion=>Euler and add and Euler=>Quaterion:  (stops looking to top!)
-            //var rotation = this.root.rotationQuaternion.toEulerAngles();
-            //rotation.addInPlace(speedRotation);
-            //this.root.rotationQuaternion = BABYLON.Quaternion.FromEulerVector(rotation);
 
             this.root.rotate(BABYLON.Axis.Y, speedRotation.y, BABYLON.Space.LOCAL);
             this.root.rotate(BABYLON.Axis.X, speedRotation.x, BABYLON.Space.LOCAL); // not .WORLD
@@ -333,7 +354,7 @@
             // NO!:  https://doc.babylonjs.com/resources/rotation_conventions#euler-angles-to-quaternions
             // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
 
-            setCamera(  this.camPos.absolutePosition,
+            setCamera(  cameraPosition, //this.camPos.absolutePosition,
                         this.root.rotationQuaternion );
         }
 
@@ -433,53 +454,24 @@
         constructor(scene) {
             this.scene = scene;
 
-            var radius   = 63781.37*8/9 // m Meter   Erdradius: 6.378.137m
-/** /
-            var textureLoader = new THREE.TextureLoader();
-
-            var geometry = new THREE.SphereBufferGeometry( radius, 64, 64 );
-            var material = new THREE.MeshBasicMaterial( {color: 0x0080ff} );
-            material.transparent = true;
-            material.opacity = 0.0;
-            material.map = new THREE.TextureLoader().load( "4096_earth.jpg",
-            	function ( texture ) { cocpit.Out( [                                 'ERDE ganz geladen'] ); } // onLoaded
-            //function ( texture ) { cocpit.Out( [Math.round(percentComplete, 2) + '% Erde downloaded'] ); } // onProgress callback currently not supported!
-            );
-
-            material.map = textureLoader.load( "4096_earth.jpg" );  // https://free3d.com/3d-model/planet-earth-99065.html
-/**/
+            // Original Maßstab geht für Erde in der Oculus Quest nicht. Da flackern die Sterne durch die Erde durch
+            var eFACT    = 100
+            var radius   = 63781378/eFACT // m Meter   Erdradius: 6.378.137m
 
             var material = new BABYLON.StandardMaterial("EarthMaterial", scene);
             material.diffuseTexture = new BABYLON.Texture('./media/4096_earth.jpg', scene);
-            this.sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter:radius*2}, scene);
+            this.sphere  = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter:radius*2}, scene);
             this.sphere.material = material;
-            this.sphere.position.x = -(radius+400*1000          /100            ) // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
+            this.sphere.position.x = -(radius + 4*100*1000   /10 ) // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
             this.sphere.rotation.z = rad(180); // Why is the texture upside down ???
-//          this.sphere.rotation.z = rad( 46)
-//          this.sphere.rotation.x = Math.PI / 180 * (-90 - 46) //- 90 * 0//48;
-//          this.sphere.rotation.z = Math.PI / 180 * (-90  + .30) //- 90 + 0;    rotate Europe on top
             this.sphere.material = material;
             return this
         }
 
 
-
-
       animate(dSec) {
-
         this.sphere.rotation.y += 0.00001;
-
-        /** /
-        if(sphere.material && sphere.material.map) {
-          if(sphere.material.opacity < 1.0) {
-             sphere.material.opacity += 0.002;
-          } else {
-            sphere.material.transparent = false;
-          }
-        }
-        /**/
-
-      }//animate
+      }
 
 
   }//Earth
@@ -519,18 +511,14 @@
         var fNEAR = 2;                      // to show the bike close by
         var fFAR  = 100*1000*1000*1000*1000      // to show the far away earth. Default: 10'000
 
-        vrHelper = scene.createDefaultVRExperience();
-        vrHelper.deviceOrientationCamera.minZ   /= fNEAR
+        vrHelper = scene.createDefaultVRExperience(/*{defaultheight:0.801 NOP! }*/);
+        vrHelper.deviceOrientationCamera.minZ   /= fNEAR    // 2d
         vrHelper.deviceOrientationCamera.maxZ   *= fFAR
-        vrHelper.vrDeviceOrientationCamera.minZ /= fNEAR
+        vrHelper.vrDeviceOrientationCamera.minZ /= fNEAR    // cardboard
         vrHelper.vrDeviceOrientationCamera.maxZ *= fFAR
-        vrHelper.webVRCamera.minZ               /= fNEAR
+        vrHelper.webVRCamera.minZ               /= fNEAR    // Oculus       currentVRCamera
         vrHelper.webVRCamera.maxZ               *= fFAR
-
-//      deviceOrientationCamera // 2d
-//      vrDeviceOrientationCamera // cardboard
-//      webVRCamera // Oculus
-//      currentVRCamera //
+    //  vrHelper._defaultHeight = 0.8 // NOP! sitting on a bike
 
         vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
         vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
@@ -538,7 +526,7 @@
         var space = new Space(scene);
 //      space.grid(2,8,0.5);
 
-        space.mines(29,10,5)
+        space.mines(19,10,10)
         space.gates(12, 4,5);
         space.skyDome();
 
