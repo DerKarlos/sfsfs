@@ -144,8 +144,6 @@
             this.keyMPoint     = 0; //                Minus/Point-Keys
             this.joystick      = new BABYLON.Vector3();
 
-            this.speedPosition = new BABYLON.Vector3();
-            this.speedRotation = new BABYLON.Vector3();
             this.rampPosition  = new Ramp3();
             this.rampRotation  = new Ramp3();
 
@@ -203,8 +201,6 @@
         resetPositionAndRotation() {
             this.rampPosition.reset();
             this.rampRotation.reset();
-            this.speedPosition = BABYLON.Vector3.Zero();
-            this.speedRotation = BABYLON.Vector3.Zero();
             bike.resetPositionAndRotation();
         }
 
@@ -241,17 +237,9 @@
             var accelInputY  = setDeadZone(this.joystick.y) * -1;
             var accelInputZ  = setDeadZone(this.joystick.z) * +1;
 
-            if(this.stop) {
-                var factor = 1 - dSec*1;
-                this.speedPosition.scaleInPlace(factor);
-                this.speedRotation.scaleInPlace(factor);
+            if(this.stop)
+                this.stop = bike.stop(dSec);
 
-                if(this.speedPosition.length + this.speedRotation.length < 0.01) {
-                    this.stop = false;
-                    this.speedPosition = BABYLON.Vector3.Zero();
-                    this.speedRotation = BABYLON.Vector3.Zero();
-                }
-            }
 
             var accelerationPosition = this.rampPosition.ramping(
                 0,                           // shift
@@ -265,39 +253,34 @@
                 0           +this.keyMPoint,    // ()   yaw   y
                 dSec);
 
-
-            var accelerationPosition2 = accelerationPosition.multiplyByFloats(1,1,5);
             var matrix = bike.root.getWorldMatrix().getRotationMatrix();
-            var accelerationPosition3 = BABYLON.Vector3.TransformCoordinates(accelerationPosition2, matrix);  // applyEuler
-
-            var cameraOffset = BABYLON.Vector3.TransformCoordinates(bike.cameraOffset, matrix);
+            accelerationPosition = accelerationPosition.multiplyByFloats(1,1,5);
+            accelerationPosition = BABYLON.Vector3.TransformCoordinates(accelerationPosition, matrix);  // applyEuler
 
             switch("mix") {
+
                 case "fake":
-                this.speedPosition.copyFrom(accelerationPosition3  .scaleInPlace(0.01));
-                this.speedRotation.copyFrom(accelerationRotation   .scaleInPlace(0.01));
+                bike.setSpeed(        accelerationPosition.scaleInPlace(0.01),
+                                      accelerationRotation.scaleInPlace(0.01)  );
                 break;
 
                 case "mix":
-                this.speedPosition.addInPlace(accelerationPosition3.scaleInPlace(0.001));
-                this.speedRotation.copyFrom(accelerationRotation   .scaleInPlace(0.010));
+                bike.setAcceleratoin( accelerationPosition.scaleInPlace(0.001), 0 );
+                bike.setSpeed( 0,     accelerationRotation.scaleInPlace(0.010)    );
                 break;
 
                 case "real":
-                this.speedPosition.addInPlace(accelerationPosition3.scaleInPlace(0.0010));
-                this.speedRotation.addInPlace(accelerationRotation .scaleInPlace(0.0001));
+                bike.setAcceleratoin( accelerationPosition.scaleInPlace(0.0010),
+                                      accelerationRotation.scaleInPlace(0.0001)  );
+
+
                 var limit = 0.01;
                 var min = new BABYLON.Vector3(-limit,-limit,-limit);
                 var max = new BABYLON.Vector3(+limit,+limit,+limit);
-                this.speedRotation = BABYLON.Vector3.Clamp(this.speedRotation,min,max);
+                bike.speedRotation = BABYLON.Vector3.Clamp(bike.speedRotation,min,max);
                 break;
 
             }
-            if(true) { // real space
-            } else { // fake space stopping
-            }
-
-            bike.animate( this.speedPosition, this.speedRotation, cameraOffset );
 
         }
 
@@ -322,39 +305,64 @@
             handle.position.y = +0.6;
             handle.position.z = +0.4;
 
-            this.camPos = BABYLON.MeshBuilder.CreateBox("", {size: 0.001},  scene); // Why no TransformNode?
-            this.camPos.parent     = this.root;
-            this.camPos.position.y = +0.8;
+            this.cameraOffset  = new BABYLON.Vector3(0, 0.8, 0);
+            this.speedPosition = new BABYLON.Vector3();
+            this.speedRotation = new BABYLON.Vector3();
 
-            this.cameraOffset = new BABYLON.Vector3(0, 0.8, 0);
-
-//          vrHelper.deviceOrientationCamera  .parent = this.root;
-//          vrHelper.vrDeviceOrientationCamera.parent = this.root;
-//          vrHelper.webVRCamera              .parent = this.root;
 
 
         }
 
+        setSpeed(position,rotation) {
+            if(position) this.speedPosition.copyFrom(position);
+            if(rotation) this.speedRotation.copyFrom(rotation);
+        }
+
+
+        setAcceleratoin(position,rotation) {
+            if(position) this.speedPosition.addInPlace(position);
+            if(rotation) this.speedRotation.addInPlace(rotation);
+        }
+
+
+        stop(dSec) {
+            var factor = 1 - dSec*1;
+            this.speedPosition.scaleInPlace(factor);
+            this.speedRotation.scaleInPlace(factor);
+
+            if(this.speedPosition.length + this.speedRotation.length < 0.01) {
+                this.speedPosition = BABYLON.Vector3.Zero();
+                this.speedRotation = BABYLON.Vector3.Zero();
+                return false;
+            }
+            else return true;
+        }
+
+
         resetPositionAndRotation() {
+            this.speedPosition = BABYLON.Vector3.Zero();
+            this.speedRotation = BABYLON.Vector3.Zero();
             this.root.position           = BABYLON.Vector3.Zero()
             this.root.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, 0.00001/*Why is 0 so od in Babslon???*/, 0);
         }
 
         // move is part of the controls but is done direct by the bike mash
-        animate( speedPosition, speedRotation, cameraOffset ){
+        animate(){
 
-            var cameraPosition = this.root.position.add(cameraOffset);
 
-            this.root.position.addInPlace(speedPosition);
+            this.root.position.addInPlace(this.speedPosition);
 
-            this.root.rotate(BABYLON.Axis.Y, speedRotation.y, BABYLON.Space.LOCAL);
-            this.root.rotate(BABYLON.Axis.X, speedRotation.x, BABYLON.Space.LOCAL); // not .WORLD
-            this.root.rotate(BABYLON.Axis.Z, speedRotation.z, BABYLON.Space.LOCAL);
+            this.root.rotate(BABYLON.Axis.Y, this.speedRotation.y, BABYLON.Space.LOCAL);
+            this.root.rotate(BABYLON.Axis.X, this.speedRotation.x, BABYLON.Space.LOCAL); // not .WORLD
+            this.root.rotate(BABYLON.Axis.Z, this.speedRotation.z, BABYLON.Space.LOCAL);
 
             // NO!:  https://doc.babylonjs.com/resources/rotation_conventions#euler-angles-to-quaternions
             // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
 
-            setCamera(  cameraPosition, //this.camPos.absolutePosition,
+            var matrix = this.root.getWorldMatrix().getRotationMatrix();
+            var cameraOffset2 = BABYLON.Vector3.TransformCoordinates(this.cameraOffset, matrix);
+
+            setCamera(  this.root.position.add(cameraOffset2),
                         this.root.rotationQuaternion );
         }
 
@@ -547,8 +555,9 @@
             seconds += dSec;
 
             control.animate(dSec);
-            space.animate(dSec);
-            earth.animate(dSec);
+            bike   .animate(dSec);
+            space  .animate(dSec);
+            earth  .animate(dSec);
 
             if(xwing) {
                 var s = seconds*10 % (Math.PI*2)
