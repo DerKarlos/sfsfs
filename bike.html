@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
-    <title>Space Bike</title>
+    <title>Space Sim</title>
     <style>
     html, body { overflow:   hidden;    width: 100%;    height: 100%;     margin: 0;    padding: 0;    }
     #viewer    { touch-action: none;    width: 100%;    height: 100%;                            }
@@ -14,6 +14,8 @@
     <script src ='lib/babylon.max.js'> </script>
     <script src ='lib/babylonjs.loaders.min.js'> </script>
     <script type='module'>
+
+    import { HeadUpDisplay  } from './hud.js';
 
     /**/
     // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
@@ -243,21 +245,21 @@
 
             var accelerationPosition = this.rampPosition.ramping(
                 0,                           // shift
-                0,                           // rise
+                +accelInputZ+this.keyPagePS, // rise
                 +accelInputY+this.keyUpDown, // speed
                 dSec);
 
             var accelerationRotation = this.rampRotation.ramping(
-                -accelInputZ+this.keyPagePS,    // v^   roll  z
+            0,//-accelInputZ+this.keyPagePS,    // v^   roll  z
                 +accelInputX+this.keyLeftRight, // <>   pitch x
                 0           +this.keyMPoint,    // ()   yaw   y
                 dSec);
 
             var matrix = bike.root.getWorldMatrix().getRotationMatrix();
-            accelerationPosition = accelerationPosition.multiplyByFloats(1,1,5);
+            accelerationPosition = accelerationPosition.multiplyByFloats(1,25,50);
             accelerationPosition = BABYLON.Vector3.TransformCoordinates(accelerationPosition, matrix);  // applyEuler
 
-            switch("mix") {
+            switch("fake") {
 
                 case "fake":
                 bike.setSpeed(        accelerationPosition.scaleInPlace(0.01),
@@ -293,6 +295,7 @@
             //// Space Bike (root, body and camera position)
             this.root = new BABYLON.TransformNode("root", scene);
             this.resetPositionAndRotation();
+            /**************** /
 
             var body = BABYLON.MeshBuilder.CreateCylinder("body", {height: 3, diameterTop: 0.2, diameterBottom: 1, tessellation: 16}, scene);
             body.rotation.x = rad(90);
@@ -304,8 +307,10 @@
             handle.parent     = this.root;
             handle.position.y = +0.6;
             handle.position.z = +0.4;
+            /****************/
 
-            this.cameraOffset  = new BABYLON.Vector3(0, 0.8, 0);
+            this.cameraOffset1  = new BABYLON.Vector3( 0, 1.6, 0);  // 0.8 für bike
+            this.cameraOffset3  = new BABYLON.Vector3(5, 8, -30);  // 0.8 für 3rd person view
             this.speedPosition = new BABYLON.Vector3();
             this.speedRotation = new BABYLON.Vector3();
 
@@ -360,9 +365,10 @@
             // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
 
             var matrix = this.root.getWorldMatrix().getRotationMatrix();
-            var cameraOffset2 = BABYLON.Vector3.TransformCoordinates(this.cameraOffset, matrix);
+            var cameraOffset = vrHelper.isInVRMode ? this.cameraOffset1 : this.cameraOffset3;
+            cameraOffset = BABYLON.Vector3.TransformCoordinates(cameraOffset, matrix);
 
-            setCamera(  this.root.position.add(cameraOffset2),
+            setCamera(  this.root.position.add(cameraOffset),
                         this.root.rotationQuaternion );
         }
 
@@ -423,7 +429,7 @@
         //// set some gates to fly throu
         gates(count,rotation,dist) {
             // show a "tunnel"
-            var tor = BABYLON.MeshBuilder.CreateTorus("", {diameter: 4, thickness: 0.05, tessellation: 4}, this.scene);
+            var tor = BABYLON.MeshBuilder.CreateTorus("", {diameter: 8, thickness: 0.05, tessellation: 4}, this.scene);
             tor.rotation.x = rad(45);
             tor.rotation.y = rad(90);
             tor.rotation.z = rad(90);
@@ -441,7 +447,7 @@
         	this.sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/sky.jpg', {size: vrHelper.currentVRCamera.maxZ*0.9}, this.scene); //bbb resolution: 64,size: radius*2
         	this.sky.infiniteDistance = true;
             // Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid.
-            this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
+            //this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
         	return this.sky;
         }
 
@@ -493,6 +499,7 @@
     var seconds  = 0;
     var vrHelper = undefined;
     var bike     = undefined; // local?
+    var pod      = undefined;
     var xwing    = undefined;
     var earth    = undefined;
     var control  = undefined;
@@ -516,6 +523,8 @@
 
         scene.clearColor = BABYLON.Color3.Black();
 
+
+
         var fNEAR = 2;                      // to show the bike close by
         var fFAR  = 100*1000*1000*1000*1000      // to show the far away earth. Default: 10'000
 
@@ -526,25 +535,47 @@
         vrHelper.vrDeviceOrientationCamera.maxZ *= fFAR
         vrHelper.webVRCamera.minZ               /= fNEAR    // Oculus       currentVRCamera
         vrHelper.webVRCamera.maxZ               *= fFAR
-    //  vrHelper._defaultHeight = 0.8 // NOP! sitting on a bike
 
         vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
         vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
+
+        var hud    = new HeadUpDisplay(vrHelper.deviceOrientationCamera,scene);
+        hud.out(["TEST #############","22222"])
+
+        vrHelper.onEnteringVRObservable.add( ()=>{ hud.setParent(bike.root, true                 ); });
+        vrHelper.onExitingVRObservable .add( ()=>{ hud.setParent(vrHelper.deviceOrientationCamera); });
+
+        vrHelper.onEnteringVR.add(()=>{
+        });
+
+
         var space = new Space(scene);
 //      space.grid(2,8,0.5);
 
-        space.mines(19,10,10)
+        space.mines(20,8,15)  // x,plusMinus,distance
         space.gates(12, 4,5);
         space.skyDome();
 
         earth = new Earth();
 
-        loadGlb("xwing_t65",scene,function(glb){
+        loadGlb("xwing_t65",scene,function(glb){ //
             xwing = glb;
             xwing.rotation.y = rad(90);
-            xwing.position.z = -15; // -4
+            xwing.position.z = -25; // -15   -4
         });
+
+/**/        loadGlb("pod",scene,function(glb){
+            pod = glb;
+            pod.position.y -= 1.0
+            pod.parent = bike.root;
+        });/**/
+
+        loadGlb("Orion",scene,function(glb){
+            glb.position.x = +500
+            glb.position.y = -150
+        });
+
 
         bike    = new Bike(scene);
         control = new Control(engine, vrHelper);
@@ -554,10 +585,13 @@
             var dSec = engine._deltaTime / 1000
             seconds += dSec;
 
-            control.animate(dSec);
-            bike   .animate(dSec);
-            space  .animate(dSec);
-            earth  .animate(dSec);
+            if(space) space.animate(dSec);
+            if(earth) earth.animate(dSec);
+
+            if(bike.root) {
+                control.animate(dSec);
+                bike   .animate(dSec);
+            }
 
             if(xwing) {
                 var s = seconds*10 % (Math.PI*2)
