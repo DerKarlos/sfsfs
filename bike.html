@@ -247,101 +247,43 @@
 
 
 
-        //  this.rotationRelativMesh.rotationQuaternion = vrHelper.webVRCamera.deviceRotationQuaternion.clone();
-            this.rotationRelativMesh.rotationQuaternion = BABYLON.Quaternion.FromEulerVector(BABYLON.Vector3.Zero() )
+            this.rotationRelativMesh.rotationQuaternion = vrHelper.webVRCamera.deviceRotationQuaternion.clone();
 
             var  rotationDevice = vrHelper.webVRCamera.deviceRotationQuaternion.toEulerAngles();
-            var  rotationBike   = vrHelper.webVRCamera.      rotationQuaternion.toEulerAngles();
+            var  rotationCamera = vrHelper.webVRCamera.      rotationQuaternion.toEulerAngles();
 
-            this.rotationRelativMesh.rotate(BABYLON.Axis.Y, +rotationDevice.y, BABYLON.Space.LOCAL);
-            this.rotationRelativMesh.rotate(BABYLON.Axis.X, +rotationDevice.x, BABYLON.Space.LOCAL);
-            this.rotationRelativMesh.rotate(BABYLON.Axis.Z, +rotationDevice.z, BABYLON.Space.LOCAL);
-
-            var  rotationRelati1 = this.rotationRelativMesh.rotationQuaternion.toEulerAngles().clone();
-
-            this.rotationRelativMesh.rotate(BABYLON.Axis.Y, -rotationBike.y,   BABYLON.Space.LOCAL);
-            this.rotationRelativMesh.rotate(BABYLON.Axis.X, -rotationBike.x,   BABYLON.Space.LOCAL);
-            this.rotationRelativMesh.rotate(BABYLON.Axis.Z, -rotationBike.z,   BABYLON.Space.LOCAL);
+            this.rotationRelativMesh.rotate(BABYLON.Axis.Y, -rotationCamera.y, BABYLON.Space.LOCAL);
+            this.rotationRelativMesh.rotate(BABYLON.Axis.X, -rotationCamera.x, BABYLON.Space.LOCAL);
+            this.rotationRelativMesh.rotate(BABYLON.Axis.Z, -rotationCamera.z, BABYLON.Space.LOCAL);
 
             var  rotationRelativ = this.rotationRelativMesh.rotationQuaternion.toEulerAngles();
+            var  x = //+rotationRelativ.x * Math.cos(rotationDevice.y)/1
+                     -rotationRelativ.z * Math.sin(rotationDevice.y)/1;
+            var  y = +rotationRelativ.y;
+            var  z = +0;
 
 
             if(hud)
             hud.out([
-                        "Dev: "+Math.floor( grad(rotationDevice .y) ),
-                        "ReD: "+Math.floor( grad(rotationRelati1.y) ),
-                        "Bik: "+Math.floor( grad(rotationBike   .y) ),
-                        "Rel: "+Math.floor( grad(rotationRelativ.y) ),
-                        dSec,
+                        "Dev: "+Math.floor( grad(rotationDevice .x) )
+                           +" "+Math.floor( grad(rotationDevice .y) )
+                           +" "+Math.floor( grad(rotationDevice .z) ),
+
+                        "Bik: "+Math.floor( grad(rotationCamera .x) )
+                           +" "+Math.floor( grad(rotationCamera .y) )
+                           +" "+Math.floor( grad(rotationCamera .z) ),
+
+                        "Rel: "+Math.floor( grad(rotationRelativ.x) )
+                           +" "+Math.floor( grad(rotationRelativ.y) )
+                           +" "+Math.floor( grad(rotationRelativ.z) ),
+
+                        "xyz: "+Math.floor( grad(                x) )
+                           +" "+Math.floor( grad(                y) )
+                           +" "+Math.floor( grad(                z) ),
+
+                        "dSc: "+Math.floor(dSec*1000),
                     ]);
 
-
-
-
-/** /
-
-            // device rotation relativ to vr rotation:  relativ = device-vr
-            var rotationDevice = new BABYLON.Mesh("",this.scene);
-            var rotationBike   = new BABYLON.Mesh("",this.scene);
-            rotationDevice.rotationQuaternion = vrHelper.webVRCamera.deviceRotationQuaternion;
-            rotationBike  .rotationQuaternion = vrHelper.webVRCamera.rotationQuaternion;
-            var matrixDevice   = rotationDevice.getWorldMatrix().getRotationMatrix();
-            var matrixBike     = rotationBike  .getWorldMatrix().getRotationMatrix().invert();
-            var matrixRelativ  = matrixDevice.add(matrixBike);
-
-            var rotationRelativ = new BABYLON.Vector3(0,0,1);
-            rotationRelativ = BABYLON.Vector3.TransformCoordinates(rotationRelativ, matrixDevice);
-
-//          var matrix = bike.root.getWorldMatrix().getRotationMatrix();
-//          accelerationPosition = accelerationPosition.multiplyByFloats(1,25,50);
-//          accelerationPosition = BABYLON.Vector3.TransformCoordinates(accelerationPosition, matrix);  // applyEuler
-
-            if(hud)
-            hud.out([   rotationRelativ,
-                        matrixDevice ._m,
-                        matrixBike   ._m,
-                        matrixRelativ._m,
-                    ]);
-
-
-            /** /
-            accelerationPosition = accelerationPosition.multiplyByFloats(1,25,50);
-            accelerationPosition = BABYLON.Vector3.TransformCoordinates(accelerationPosition, matrix);  // applyEuler
-
-
-                        var rd = vrHelper.webVRCamera.deviceRotationQuaternion; // device rift
-                        var rc = vrHelper.webVRCamera.rotationQuaternion      ; // bike
-
-/** /
-
-            var rd = vrHelper.webVRCamera.deviceRotationQuaternion.toEulerAngles().y; // device rift
-            var rc = vrHelper.webVRCamera.rotationQuaternion.toEulerAngles().y; // bike
-            var ry = rd-rc;
-
-            var device = vrHelper.webVRCamera.deviceRotationQuaternion.toEulerAngles()
-            var camera = vrHelper.webVRCamera.rotationQuaternion      .toEulerAngles()
-            var delta  = device.subtract(camera); // toEulerAngles().
-
-            device.rotate(BABYLON.Axis.Y, -camera.y, BABYLON.Space.LOCAL);
-            device.rotate(BABYLON.Axis.X, -camera.x, BABYLON.Space.LOCAL);
-            device.rotate(BABYLON.Axis.Z, -camera.z, BABYLON.Space.LOCAL);
-
-
-            var x = delta.x;
-            var y = delta.y;
-
-            if(x>(+Math.PI/4)) x = (Math.PI/4)
-            if(x<(-Math.PI/4)) x = (Math.PI/4) // -170 - 170 = -340 + 360 = +20
-            if(y>(+Math.PI)) y -= (Math.PI*2)
-            if(y<(-Math.PI)) y += (Math.PI*2)
-
-            if(hud)
-            hud.out([   device.y,
-                        camera.y,
-                        delta.y,
-                        y,
-                    ]);
-/**/
 
 
             var accelInputX  = setDeadZone(this.joystick.x) * +1; // +/- 0.2 to 1.0  becomes  0.0 to 1.0
@@ -361,16 +303,15 @@
 
 
             var accelerationRotation = this.rampRotation.ramping(
-                rotationRelativ.x    +0             +this.keyUeAe,                   // v^   roll  z  ///  -accelInputZ+this.keyPagePS,
-                rotationRelativ.y    +accelInputX   +this.keyLeftRight,   // <>   pitch x  ///  +setDeadZone(y)*4
-                /*rotationRelativ.z*/    +0             +this.keyMPoint,      // ()   yaw   y
+            /*x*/    -0/*elInputZ*/ +this.keyUeAe,        // v^   roll  z  ///  -accelInputZ+this.keyPagePS,
+              y      +accelInputX   +this.keyLeftRight,   // <>   pitch x  ///  +setDeadZone(y)*4
+            /*z*/    +0             +this.keyMPoint,      // ()   yaw   y
                 dSec);
 
 
 
+
             accelerationPosition = accelerationPosition.multiplyByFloats(1,25,50); // relative to ship
-//öö        var matrix = bike.root.getWorldMatrix().getRotationMatrix();   // Matrix is not needed, using locallyTranslate :-)
-//öö        accelerationPosition = BABYLON.Vector3.TransformCoordinates(accelerationPosition, matrix);  // applyEuler
 
 
             switch("fake") {
@@ -389,9 +330,9 @@
 
 
                 case "real":
-                bike.setAcceleratoin( accelerationPosition.scaleInPlace(0.10),
+                bike.setAcceleratoin( accelerationPosition.scaleInPlace(0.01),
                                       accelerationRotation.scaleInPlace(0.01)  );
-                var limit = 0.01;
+                var limit = 0.1;
                 var min = new BABYLON.Vector3(-limit,-limit,-limit);
                 var max = new BABYLON.Vector3(+limit,+limit,+limit);
                 bike.speedRotation = BABYLON.Vector3.Clamp(bike.speedRotation,min,max);
@@ -472,10 +413,8 @@
         animate(dSec){
 
 
-            this.root.locallyTranslate(this.speedPosition.scale(dSec));     // relatige to ship  OR:   this.root.translate(this.speedPosition, 1 , Space.LOCAL);     // relatige to ship
-//öö        this.root.position.addInPlace(this.speedPosition);  // relative to world
-
-//???       this.root.rotate(this.speedRotation, dSec, BABYLON.Space.LOCAL);  // ??? Does strange things like slimming the ship
+            this.root.locallyTranslate(this.speedPosition.scale(dSec));         // relatige to ship  OR:   this.root.translate(this.speedPosition, 1 , Space.LOCAL);     // relatige to ship
+            //???       this.root.rotate(this.speedRotation, dSec, BABYLON.Space.LOCAL);    // ??? Does strange things like slimming the ship
 
             this.root.rotate(BABYLON.Axis.Y, this.speedRotation.y*dSec, BABYLON.Space.LOCAL);
             this.root.rotate(BABYLON.Axis.X, this.speedRotation.x*dSec, BABYLON.Space.LOCAL); // not .WORLD
@@ -484,12 +423,23 @@
             // NO!:  https://doc.babylonjs.com/resources/rotation_conventions#euler-angles-to-quaternions
             // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
 
-            var matrix = this.root.getWorldMatrix().getRotationMatrix();
             var cameraOffset = vrHelper.isInVRMode ? this.cameraOffset1 : this.cameraOffset3;
-            cameraOffset = BABYLON.Vector3.TransformCoordinates(cameraOffset, matrix);
 
-            setCamera(  this.root.position.add(cameraOffset),
-                        this.root.rotationQuaternion );
+            var calc = new BABYLON.AbstractMesh();
+            calc.rotationQuaternion = this.root.rotationQuaternion;
+            calc.position           = this.root.position.clone();
+            calc.locallyTranslate(cameraOffset);
+            setCamera(  calc.position,
+                        calc.rotationQuaternion );
+
+// OR:      var matrix = this.root.getWorldMatrix().getRotationMatrix();
+//          cameraOffset = BABYLON.Vector3.TransformCoordinates(cameraOffset, matrix);
+//          setCamera(  this.root.position.add(cameraOffset),
+//                      this.root.rotationQuaternion );
+
+
+
+
         }
 
     }
@@ -568,10 +518,10 @@
 
         skyDome() { // This is so much more easy with BabylonJS
         	// ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
-            var pic1 = "sky.jpg"                                    // bunt
-            var pic2 = "cropped-starglobe-maya-render.jpg"          // black
-            var pic3 = "skydome-hdri-starlight-sky-3-3d-model.jpg"  // blue
-            var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_defish.jpg"   // klein
+            var pic1 = "sky.jpg"                                        // bunt
+            var pic2 = "cropped-starglobe-maya-render.jpg"              // black
+            var pic3 = "skydome-hdri-starlight-sky-3-3d-model.jpg"      // blue
+            var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_X_defish.png"    // X klein? Y *4
 
 
         	this.sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/'+pic4, {size: vrHelper.currentVRCamera.maxZ*0.9}, this.scene); //bbb resolution: 64,size: radius*2
@@ -634,6 +584,7 @@
     var xwing    = undefined;
     var earth    = undefined;
     var control  = undefined;
+    var dSecX    = 1/60;
 
     function setCamera(absolutePosition, rotationQuaternion) {
         var camera = vrHelper.currentVRCamera;        // if(vrHelper.isInVRMode)
@@ -649,8 +600,8 @@
         //// INIT
         var canvas = document.getElementById('viewer');
         var engine = new BABYLON.Engine(canvas, true);
-        var scene  = new BABYLON.Scene(engine);
-        var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0,1,  0), scene);
+        var scene  = new BABYLON.Scene (engine);
+        var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0,1,0), scene);
 
         scene.clearColor = BABYLON.Color3.Black();
 
@@ -672,7 +623,7 @@
 
 
         hud    = new HeadUpDisplay(vrHelper.deviceOrientationCamera,scene);
-        hud.out(["TEST #############","22222"],0*3000);
+        hud.out(["TEST START"],3000);
 
         vrHelper.onEnteringVRObservable.add( ()=>{
             hud.setParent(bike.root, true);
@@ -685,9 +636,9 @@
 
         var space = new Space(scene); //      space.grid(2,8,0.5);
 
-        space.mines(20,8,15)  // x,plusMinus,distance
+//???        space.mines(20,8,15)  // x,plusMinus,distance
         space.gates(12, 4,5);
-//        space.skyDome();
+        space.skyDome();
 
 //        earth = new Earth();
 
@@ -696,16 +647,23 @@
             xwing.rotation.y = rad(90);
             xwing.position.z = -25; // -15   -4
         });/**/
-
+/** /
        loadGlb("pod",scene,function(glb){
             pod = glb;
             pod.position.y -= 1.0
             pod.parent = bike.root;
         });
-
+/**/
         loadGlb("Orion",scene,function(glb){
             glb.position.x = +500
             glb.position.y = -150
+        });
+/**/
+        loadGlb("hydra",scene,function(glb){ // "HYDRA-II_glb"  "hydra_o"
+            glb.position.x = +0
+            glb.position.y = -0
+            var s = 10;
+            glb.scaling = new BABYLON.Vector3(s,s,s);
         });
 
 
@@ -714,15 +672,19 @@
 
         //// RENDER CYCLE
         engine.runRenderLoop(function() {
-            var dSec = engine._deltaTime / 1000
-            seconds += dSec;
+            var dSec1 = engine._deltaTime / 1000
+            seconds += dSec1;
 
-            if(space) space.animate(dSec);
-            if(earth) earth.animate(dSec);
+            // Why is dSec so irregular??? It causes optical odds while rotating
+            var fact = 6
+            dSecX = ( dSecX*(fact-1)+dSec1 ) / fact;
+
+            if(space) space.animate(dSecX);
+            if(earth) earth.animate(dSecX);
 
             if(bike.root) {
-                control.animate(dSec);
-                bike   .animate(dSec);
+                control.animate(dSecX);
+                bike   .animate(dSecX);
             }
 
             if(xwing) {
