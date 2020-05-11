@@ -19,11 +19,12 @@ export class User {
         /****************/
 
         this.cameraOffset1 = new BABYLON.Vector3( 0.0, 1.6, -0);  // 0.8 für bike
-        this.cameraOffset3 = new BABYLON.Vector3( 0.5, 1.8, -6);  // 3rd person view
+        this.cameraOffset3 = new BABYLON.Vector3( 0.5, 3.8, -5);  // 3rd person view
         this.speedPosition = new BABYLON.Vector3();
         this.speedRotation = new BABYLON.Vector3();
         this.speedRotWorld = new BABYLON.Vector3();
 
+        this.control = undefined;
     }
 
     setSpeed(position,rotation) {
@@ -62,14 +63,18 @@ export class User {
     // move is part of the controls but is done direct by the user mash
     animate(dSec,vrHelper){
 
-        //this.scene.hud.out([this.speedPosition])
+        if( this.control ) {
+            this.control.animate(dSec,vrHelper);
+        }
+
+        var limit = 5000.0;
+        var min = new BABYLON.Vector3(-limit,-limit,-limit);
+        var max = new BABYLON.Vector3(+limit,+limit,+limit);
+        this.speedPosition = BABYLON.Vector3.Clamp(this.speedPosition,min,max);
 
         this.root.locallyTranslate(this.speedPosition.scale(dSec));         // relatige to ship  OR:   this.root.translate(this.speedPosition, 1 , Space.LOCAL);     // relatige to ship
-        //???       this.root.rotate(this.speedRotation, dSec, BABYLON.Space.LOCAL);    // ??? Does strange things like slimming the ship
 
         this.root.rotate(BABYLON.Axis.Y, this.speedRotation.y*dSec, BABYLON.Space.LOCAL); // not .WORLD
-//      this.root.rotate(BABYLON.Axis.X, this.speedRotation.x*dSec, BABYLON.Space.LOCAL);
-//      this.root.rotate(BABYLON.Axis.Z, this.speedRotation.z*dSec, BABYLON.Space.LOCAL);
 
         // Does the VR-Helper do the mouse rotation?
         // Is there a way to disable it?

@@ -15,9 +15,10 @@
     <script src ='lib/babylonjs.loaders.min.js'> </script>
     <script type='module'>
 
-    import { rad,grad,setDeadZone,loadGlb,Ramp,Ramp3  } from './functions.js';
+    import { rad,grad,setDeadZone,loadGlb,Ramp,Ramp3,getUrlParameter,limit  } from './functions.js';
     import { HeadUpDisplay  } from './hud.js';
-    import { Space          } from './space2.js';
+    import { Space          } from './space.js';
+    import { Maze           } from './maze2d.js';
     import { User           } from './user.js';
     import { Control        } from './control.js';
 
@@ -29,24 +30,13 @@
     }
     /**/
 
-
-
-    /*
-        https://www.babylonjs-playground.com/#PYTAP9#2
-    */
-
-
-
     ///////////// MAIN /////////////////////////////////
 
     var seconds  = 0;
-    var vrHelper = undefined;
     var dSecX    = 1/60;
+    var vrHelper = undefined;
     var ground   = undefined;
     var user     = undefined; // local?
-    var control  = undefined;
-
-
 
     window.addEventListener('DOMContentLoaded', function() {
 
@@ -57,6 +47,8 @@
         var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(1,1,1), scene);
 
         scene.clearColor = BABYLON.Color3.Black();
+        scene.moveMode   = limit( getUrlParameter("m",1) * 1 ,1, 3);
+
 
 
 
@@ -76,7 +68,7 @@
 
 
         scene.hud = new HeadUpDisplay(vrHelper.deviceOrientationCamera,scene);
-        scene.hud.out(["TEST START"],3000);
+        scene.hud.out(["TEST START", "move mode: "+scene.moveMode],3000);
 
         vrHelper.onEnteringVRObservable.add( ()=>{
             scene.hud.setParent(user.root, true);
@@ -87,20 +79,38 @@
         });
 
 
+
+        // Warum geht das nicht in der exported class ???
+        vrHelper.onControllerMeshLoaded.add((webVRController)=>{
+            webVRController.onAButtonStateChangedObservable.add((stateObject)=>{ //    X <=> A
+                if(user.control) {
+
+                    if(stateObject.pressed === true){
+                        user.control.setPositionOffset(vrHelper);
+                        user.control.keyXA = true;
+                    } else {
+                        user.control.keyXA = false;
+                    }
+
+                }
+            });
+        });
+
+
+
         var space = new Space(scene);
         ground =
-        space.ground(100,false,vrHelper);
+        space.ground(100, scene.moveMode==1, vrHelper);
         space.barks(9,5);
         space.skyDome(vrHelper);
-
-
-        //        setCamera( new BABYLON.Vector3(0,1.6,0) );
+        var maze = new Maze(3,scene);
+        maze.maze.position.x = -20;
 
 
         user    = new User(scene);
-        //user.root.position = new BABYLON.Vector3(0,0,3.0)
-        //    user.setSpeed(new BABYLON.Vector3(0,0,0.9));
-        control = new Control(user, scene, engine, vrHelper);
+
+        if(scene.moveMode>1)
+        user.control = new Control(user, scene, engine, vrHelper);
 
         //// RENDER CYCLE
         engine.runRenderLoop(function() {
@@ -111,9 +121,8 @@
             var fact = 6
             dSecX = ( dSecX*(fact-1)+dSec1 ) / fact;
 
-            if(user.root) {
-                control.animate(dSecX,vrHelper);
-                user   .animate(dSecX,vrHelper);
+            if( user && scene.moveMode>1 ) {
+                user.animate(dSecX,vrHelper);
             }
 
             scene.render();

@@ -1,7 +1,32 @@
 
+///////////// Store URL parameter in array
+var gArr = undefined;
+var HTTP_GET_VARS=new Array();  // HTTP-Parameter sind viele Name=Wert Paare. Das "Array" hat keine Nummern-Index sondern verwendet den Namen! Genial.
+var strGET = document.location.search.substr(1,Math.min(document.location.search.length,1000)); // No unlimited string
+if( strGET!='')
+{
+  gArr = strGET.split('&');
+  for (var i in gArr)                   // Alle HTTP-Parameter
+  { var v=''; var vArr=gArr[i].split('=');  // In Name und Wert teilen
+    if(vArr.length>1){v=vArr[1];}   // Wert vorhanden? Merken.
+    HTTP_GET_VARS[unescape(vArr[0])] = unescape(v);  // Wert mit Index=Namen in Array.
+  }
+}
+
+//// Name suchen und Wert zurückgeben
+export function getUrlParameter(v,d) {
+  if(   !HTTP_GET_VARS[v]){ return d; }   // Name als Index nicht vorhanden? return Defaultwert
+  return HTTP_GET_VARS[v];                // ansonsen return Wert zum Namen
+}
+
 
 export function rad(degrees)    { return degrees * (Math.PI/180); }
 export function grad(rad)       { return rad     / (Math.PI/180); }
+
+
+export function limit(val, min, max) {
+  return val < min ? min : (val > max ? max : val);
+}
 
 export function setCamera(absolutePosition, rotationQuaternion, vrHelper) {
     var camera = vrHelper.currentVRCamera;        // if(vrHelper.isInVRMode)

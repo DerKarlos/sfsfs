@@ -1,18 +1,24 @@
 import { grad,setDeadZone,Ramp3  } from './functions.js';
 // rad,loadGlb,Ramp,
 
+
+
 export class Control {
 
     constructor(controledObject, scene, engine, vrHelper){
         this.controledObject = controledObject;
         this.scene           = scene;
 
+        this.keySpace      = 0;
+        this.keyXA         = false;
         this.keyLeftRight  = 0;
         this.keyUpDown     = 0;
         this.keyUeAe       = 0;
         this.keyPagePS     = 0; // Page Up/Down = Plus/Sharpe-Keys
         this.keyMPoint     = 0; //                Minus/Point-Keys
         this.joystick      = new BABYLON.Vector3();
+
+        this.positionOffset= new BABYLON.Vector3();
 
         this.rampPosition  = new Ramp3();
         this.rampRotation  = new Ramp3();
@@ -36,10 +42,11 @@ export class Control {
             });
 
             webVRController.onAButtonStateChangedObservable.add((stateObject)=>{ //    X <=> A
+                alert("X <=> A")
                 if(stateObject.pressed === true){
-                    this.stop = true;
+                    this.keyXA = true;
                 } else {
-                    this.stop = false;
+                    this.keyXA = false;
                 }
 
 
@@ -82,7 +89,7 @@ export class Control {
     onKeyDown(evt) {
         switch (evt.keyCode) {
             case  13: this.resetPositionAndRotation(); break; // return
-            case  32: this.stop = true;                break; // space
+            case  32: this.keySpace   = true;          break; // space
             case  39: this.keyLeftRight = +1;          break; // right
             case  37: this.keyLeftRight = -1;          break; // left
             case  38: this.keyUpDown    = +1;          break; // up
@@ -101,13 +108,19 @@ export class Control {
 
     onKeyUp(evt) {
         switch (evt.keyCode) {
-            case  32:           this.stop = false;      break;
+            case  32:           this.keySpace  = false; break;
             case  39: case  37: this.keyLeftRight =  0; break;
             case  38: case  40: this.keyUpDown    =  0; break;
             case 163: case 171: this.keyPagePS    =  0; break;
             case 173: case 190: this.keyMPoint    =  0; break;
             case 222: case 219: this.keyUeAe      =  0; break;
         }
+    }
+
+    setPositionOffset(vrHelper) {
+        this.rotationRelativMesh.position = vrHelper.webVRCamera.devicePosition.clone();
+        this.rotationRelativMesh.position.subtractInPlace(this.controledObject.root.position);
+        this.positionOffset = this.rotationRelativMesh.position;
     }
 
     animate(dSec,vrHelper) { // Control
@@ -125,20 +138,36 @@ export class Control {
 
         var xPos = 0;
         var zPos = 0;
-        if(vrHelper.isInVRMode) {
+        if(vrHelper.isInVRMode && this.keyXA && this.scene.moveMode>1) {
 
             this.rotationRelativMesh.position           = vrHelper.webVRCamera.devicePosition.clone();
             this.rotationRelativMesh.position.subtractInPlace(this.controledObject.root.position);
-            this.scene.hud.out([vrHelper.webVRCamera.devicePosition,
-                                this.controledObject.root.position,
-                                this.rotationRelativMesh.position
-                               ]);
-            xPos = this.rotationRelativMesh.position.x;
-            zPos = this.rotationRelativMesh.position.z;
+            this.rotationRelativMesh.position.subtractInPlace(this.positionOffset);
+
+            var x = this.rotationRelativMesh.position.x;
+            var z = this.rotationRelativMesh.position.z;
+            var a = this.controledObject.root.rotationQuaternion.toEulerAngles().y;
+            xPos  = ( +x * Math.cos(a) -z * Math.sin(a) );
+            zPos  = ( +z * Math.cos(a) +x * Math.sin(a) );
+            xPos *= 2; //xPos = xPos * Math.abs(xPos);
+            zPos *= 4; //zPos = zPos * Math.abs(zPos);
+
         }
 
         var  rotationRelativ = this.rotationRelativMesh.rotationQuaternion.toEulerAngles();
-        var  yRel = +rotationRelativ.y;
+        var  yRot = rotationRelativ.y;
+        if(this.scene.moveMode!=3 || !this.keyXA) yRot = 0;
+
+        this.scene.hud.out([
+            "xPos "+Math.floor(xPos*1000),
+            "zPos "+Math.floor(zPos*1000),
+            "yRot "+Math.floor(grad(yRot)*10),
+
+        //  vrHelper.webVRCamera.devicePosition.x,
+        //  this.controledObject.root.position.x,
+        //  this.rotationRelativMesh.position,
+                           ]);
+
 
         var accelInputX  = setDeadZone(this.joystick.x) * +1; // +/- 0.2 to 1.0  becomes  0.0 to 1.0
         var accelInputY  = setDeadZone(this.joystick.y) * -1;
@@ -158,7 +187,7 @@ export class Control {
 
         var accelerationRotation = this.rampRotation.ramping(
             /*    */ -0/*elInputZ*/ +this.keyUeAe,        // v^   roll  z  ///  -accelInputZ+this.keyPagePS,
-            /*yRel*/ +accelInputX   +this.keyLeftRight,   // <>   pitch x  ///  +setDeadZone(y)*4
+              yRot   +accelInputX   +this.keyLeftRight,   // <>   pitch x  ///  +setDeadZone(y)*4
             /*    */ +0             +this.keyMPoint,      // ()   yaw   y
             dSec);
 
@@ -167,6 +196,14 @@ export class Control {
 
         accelerationPosition = accelerationPosition.multiplyByFloats(20,20,20); // relative to ship  --  1,25,50
 
+        // To avoid over-swing add a 0-step
+        var  old = controledObject.speedPosition;
+        if(  old.x>0 && accelerationPosition.x<0
+          || old.x<0 && accelerationPosition.x>0
+           ) accelerationPosition.x = 0;
+        if(  old.z>0 && accelerationPosition.z<0
+          || old.z<0 && accelerationPosition.z>0
+           ) accelerationPosition.z = 0;
 
         switch("fake") {
 

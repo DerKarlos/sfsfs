@@ -161,14 +161,18 @@
 
             //// Oclus controls      https://playground.babylonjs.com/#0IBX3Y#1
             vrHelper.onControllerMeshLoaded.add((webVRController)=>{
+
                 control.joystick.x = 0.1;
                 // buttons
                 webVRController.onBButtonStateChangedObservable.add((stateObject)=>{
                     // if(webVRController.hand ==='right') -- enable both controller       Y <=> B
+
                     this.resetPositionAndRotation();
                 });
 
                 webVRController.onAButtonStateChangedObservable.add((stateObject)=>{ //    X <=> A
+
+                    
                     if(stateObject.pressed === true){
                         this.stop = true;
                     } else {
