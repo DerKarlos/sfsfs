@@ -11,8 +11,11 @@
 <body>
 
     <canvas id='viewer' />
-    <script src ='lib/babylon.max.js'> </script>
-    <script src ='lib/babylonjs.loaders.min.js'> </script>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <!--
+    <script src="https://cdn.babylonjs.com/babylonjs.loaders.min.js"> </script>
+    -->
     <script type='module'>
 
     import { HeadUpDisplay  } from './hud.js';
@@ -172,7 +175,7 @@
 
                 webVRController.onAButtonStateChangedObservable.add((stateObject)=>{ //    X <=> A
 
-                    
+
                     if(stateObject.pressed === true){
                         this.stop = true;
                     } else {
@@ -657,18 +660,31 @@
             pod.position.y -= 1.0
             pod.parent = bike.root;
         });
-/**/
+/** /
         loadGlb("Orion",scene,function(glb){
             glb.position.x = +500
             glb.position.y = -150
         });
-/**/
+/** /
         loadGlb("hydra",scene,function(glb){ // "HYDRA-II_glb"  "hydra_o"
             glb.position.x = +0
             glb.position.y = -0
             var s = 10;
             glb.scaling = new BABYLON.Vector3(s,s,s);
         });
+
+/**/
+        loadGlb("dragon2",scene,function(glb){
+            glb.position.x = +0
+            glb.position.y = -0
+            var s = 1;
+            glb.scaling = new BABYLON.Vector3(s,s,s);
+        });
+/**/
+
+
+
+
 
 
         bike    = new Bike(scene);
