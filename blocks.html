@@ -18,7 +18,7 @@
 <!--
 -->
     <script type='module'>
-    import { HeadUpDisplay  } from './src/hud.js';
+    import { HeadMountedDisplay  } from './src/hmd.js';
     import { Space          } from './src/space.js';
 
     import { rad,grad,setDeadZone,loadGlb,Ramp,Ramp3,getUrlParameter,limit  } from './src/functions.js';
@@ -118,8 +118,8 @@
         xrHelper.baseExperience.camera.minZ     /= fNEAR
         xrHelper.baseExperience.camera.maxZ     *= fFAR
 
-        scene.hud = new HeadUpDisplay(xrHelper.baseExperience.camera,scene);
-        scene.hud.out(["TEST START"],5000);
+        scene.hmd = new HeadMountedDisplay(xrHelper.baseExperience.camera,scene);
+        scene.hmd.out(["TEST START"],5000);
 
         var space = new Space(scene);
         space.ground(100, scene.moveMode==1, xrHelper);
@@ -204,7 +204,7 @@
                             pressed = 0;
 
 
-                        scene.hud.out([p0,pressed])
+                        scene.hmd.out([p0,pressed])
                     }
                 })
 

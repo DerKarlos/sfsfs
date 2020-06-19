@@ -20,7 +20,7 @@
     <script type='module'>
 
     import { rad,grad       } from './src/functions.js';
-    import { HeadUpDisplay  } from './src/hud.js';
+    import { HeadMountedDisplay  } from './src/hmd.js';
 //  import { WebXRPolyfill  } from './lib/webxr-polyfill.module.js.';
     const polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
     // info: https://github.com/immersive-web/webxr-polyfill
@@ -186,14 +186,14 @@
         xrHelper.baseExperience.camera.maxZ     *= fFAR
 
         xrHelper.baseExperience.onStateChangedObservable.add((state) => {
-            scene.hud.out(["bin ..."]);
+            scene.hmd.out(["bin ..."]);
             setTimeout(function() {
-                scene.hud.out(["bin drin"]);
+                scene.hmd.out(["bin drin"]);
             }, 500);
         });
 
-        scene.hud = new HeadUpDisplay(xrHelper.baseExperience.camera,scene);
-        scene.hud.out(["TEST START", "move mode: "+scene.moveMode],4000);
+        scene.hmd = new HeadMountedDisplay(xrHelper.baseExperience.camera,scene);
+        scene.hmd.out(["TEST START", "move mode: "+scene.moveMode],4000);
 
 
 
@@ -217,7 +217,7 @@
 
             var position = xrHelper.baseExperience.camera.getFrontPosition(0); // devicePosition
 
-            scene.hud.out([
+            scene.hmd.out([
                 "Stars: "+points,
                 "",
                 "xPos "+Math.floor(position.x*1000),

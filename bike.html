@@ -18,7 +18,7 @@
     -->
     <script type='module'>
 
-    import { HeadUpDisplay  } from './hud.js';
+    import { HeadMountedDisplay  } from './hmd.js';
 
     /**/
     // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
@@ -270,8 +270,8 @@
             var  z = +0;
 
 
-            if(hud)
-            hud.out([
+            if(hmd)
+            hmd.out([
                         "Dev: "+Math.floor( grad(rotationDevice .x) )
                            +" "+Math.floor( grad(rotationDevice .y) )
                            +" "+Math.floor( grad(rotationDevice .z) ),
@@ -584,7 +584,7 @@
     ///////////// MAIN /////////////////////////////////
 
     var seconds  = 0;
-    var hud      = undefined;
+    var hmd      = undefined;
     var vrHelper = undefined;
     var bike     = undefined; // local?
     var pod      = undefined;
@@ -629,13 +629,13 @@
         vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
 
-        hud    = new HeadUpDisplay(vrHelper.deviceOrientationCamera,scene);
-        hud.out(["TEST START"],3000);
+        hmd    = new HeadMountedDisplay(vrHelper.deviceOrientationCamera,scene);
+        hmd.out(["TEST START"],3000);
 
         vrHelper.onEnteringVRObservable.add( ()=>{
-            hud.setParent(bike.root, true);
+            hmd.setParent(bike.root, true);
         });
-        vrHelper.onExitingVRObservable .add( ()=>{ hud.setParent(vrHelper.deviceOrientationCamera); });
+        vrHelper.onExitingVRObservable .add( ()=>{ hmd.setParent(vrHelper.deviceOrientationCamera); });
 
         vrHelper.onEnteringVR.add(()=>{
         });

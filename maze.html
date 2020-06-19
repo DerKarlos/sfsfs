@@ -20,7 +20,7 @@
     <script type='module'>
 
     import { rad,grad,setDeadZone,loadGlb,Ramp,Ramp3,getUrlParameter,limit  } from './src/functions.js';
-    import { HeadUpDisplay  } from './src/hud.js';
+    import { HeadMountedDisplay  } from './src/hmd.js';
     import { Space          } from './src/space.js';
     import { Maze           } from './src/maze2d.js';
     import { User           } from './src/user.js';
@@ -98,14 +98,14 @@
         vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
         vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
-        scene.hud = new HeadUpDisplay(vrHelper.deviceOrientationCamera,scene);
-        scene.hud.out(["TEST START", "move mode: "+scene.moveMode],3000);
+        scene.hmd = new HeadMountedDisplay(vrHelper.deviceOrientationCamera,scene);
+        scene.hmd.out(["TEST START", "move mode: "+scene.moveMode],3000);
 
         vrHelper.onEnteringVRObservable.add( ()=>{
-            scene.hud.setParent(user.root, true);
+            scene.hmd.setParent(user.root, true);
         });
 
-        vrHelper.onExitingVRObservable .add( ()=>{ scene.hud.setParent(vrHelper.deviceOrientationCamera); });
+        vrHelper.onExitingVRObservable .add( ()=>{ scene.hmd.setParent(vrHelper.deviceOrientationCamera); });
 
         vrHelper.onEnteringVR.add(()=>{
         });

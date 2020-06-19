@@ -158,7 +158,7 @@ export class Control {
         var  yRot = rotationRelativ.y;
         if(this.scene.moveMode!=3 || !this.keyXA) yRot = 0;
 
-        this.scene.hud.out([
+        this.scene.hmd.out([
             "xPos "+Math.floor(xPos*1000),
             "zPos "+Math.floor(zPos*1000),
             "yRot "+Math.floor(grad(yRot)*10),
