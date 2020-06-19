@@ -11,19 +11,26 @@
 <body>
 
     <canvas id='viewer' />
-    <script src ='lib/babylon_4.0/babylon.max.js'> </script>
-    <script src ='lib/babylon_4.0/babylonjs.loaders.min.js'> </script>
+    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
+<!--
+<script src="https://cdn.babylonjs.com/babylonjs.loaders.min.js"></script>
+<script src ='lib/babylon_4.0/babylonjs.loaders.min.js'> </script>
+-->
     <script type='module'>
 
-    import { rad,grad,setDeadZone,loadGlb,Ramp,Ramp3,getUrlParameter,limit  } from './functions.js';
-    import { HeadUpDisplay  } from './hud.js';
-    import { Space          } from './space.js';
-    import { Maze           } from './maze2d.js';
-    import { User           } from './user.js';
-    import { Control        } from './control.js';
+    import { rad,grad,setDeadZone,loadGlb,Ramp,Ramp3,getUrlParameter,limit  } from './src/functions.js';
+    import { HeadUpDisplay  } from './src/hud.js';
+    import { Space          } from './src/space.js';
+    import { Maze           } from './src/maze2d.js';
+    import { User           } from './src/user.js';
+    import { Control        } from './src/control.js';
+//  import { WebXRPolyfill  } from './lib/webxr-polyfill.module.js.';
+    const polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
+    // info: https://github.com/immersive-web/webxr-polyfill
 
     /**/
-    // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
+    // To see errors on touch devices, activate this Errorhandler producing Ggalert dialogs
     window.onerror = function(msg,url,line){
         alert(msg+'\n'+url+'\nLine: '+line)
         return true
@@ -32,13 +39,27 @@
 
     ///////////// MAIN /////////////////////////////////
 
+
+    var webvrOk = navigator.getVRDisplays!==undefined;
+    var webxrOk = navigator.xr!==undefined;
+    var web_rOk = webvrOk || webxrOk;
+    var httpsOk = window.location.protocol=="https:";
+
+    console.log("po",polyfill,polyfill.nativeWebXR);
+    console.log("vr",navigator.getVRDisplays);
+    console.log("xr",navigator.xr);
+    console.log("hs",window.location.protocol);
+
+    if(!httpsOk && window.location.host!="localhost") window.location = "https://"+ window.location.host + window.location.pathname;
+
+
     var seconds  = 0;
     var dSecX    = 1/60;
     var vrHelper = undefined;
     var ground   = undefined;
     var user     = undefined; // local?
 
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', async function() {
 
         //// INIT
         var canvas = document.getElementById('viewer');
@@ -55,7 +76,18 @@
         var fNEAR = 2;                          // to show the bike close by
         var fFAR  = 10*1000                     // to show the far away earth. Default: 10'000
 
-        vrHelper = scene.createDefaultVRExperience(/*{defaultheight:0.801 NOP! }*/);
+
+        // here we add XR support
+        const xrHelper = await scene.createDefaultXRExperienceAsync({
+            //??? floorMeshes: [environment.ground]
+        });
+        console.log(xrHelper);
+        console.log(xrHelper.baseExperience.camera.position)
+        console.log(xrHelper.baseExperience.camera.globalPosition)
+
+        xrHelper.baseExperience.camera.minZ     /= fNEAR
+        xrHelper.baseExperience.camera.maxZ     *= fFAR
+/****** TODO
         vrHelper.deviceOrientationCamera.minZ   /= fNEAR    // 2d
         vrHelper.deviceOrientationCamera.maxZ   *= fFAR
         vrHelper.vrDeviceOrientationCamera.minZ /= fNEAR    // cardboard
@@ -66,13 +98,13 @@
         vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
         vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
 
-
         scene.hud = new HeadUpDisplay(vrHelper.deviceOrientationCamera,scene);
         scene.hud.out(["TEST START", "move mode: "+scene.moveMode],3000);
 
         vrHelper.onEnteringVRObservable.add( ()=>{
             scene.hud.setParent(user.root, true);
         });
+
         vrHelper.onExitingVRObservable .add( ()=>{ scene.hud.setParent(vrHelper.deviceOrientationCamera); });
 
         vrHelper.onEnteringVR.add(()=>{
@@ -96,13 +128,20 @@
             });
         });
 
+***/
 
 
         var space = new Space(scene);
         ground =
-        space.ground(100, scene.moveMode==1, vrHelper);
+        space.ground(100, scene.moveMode==1, xrHelper);
+        space.skyDome(xrHelper);
         space.barks(9,5);
-        space.skyDome(vrHelper);
+
+//        var box = BABYLON.MeshBuilder.CreateBox("box", {});
+//        box.position.z = +50
+//        ground = BABYLON.Mesh.CreateGround("ground", 100,100, 1, scene);
+
+
         var maze = new Maze(3,scene);
         maze.maze.position.x = -20;
 
@@ -124,6 +163,8 @@
             if( user && scene.moveMode>1 ) {
                 user.animate(dSecX,vrHelper);
             }
+
+//            xrHelper.baseExperience.camera.position += 1 * dSecX
 
             scene.render();
         });

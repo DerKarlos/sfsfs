@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <title>WebVR/XR check</title>
+    <!--- Link to the last version of BabylonJS --->
+    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
+    <!---
+    <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
+
+    OH! WebXR-POLYFILL GEHT AUCH GANZ OHNE WebVR:
+    A JavaScript implementation of the WebXR Device API, as well as the WebXR Gamepad Module.
+    This polyfill allows developers to write against the latest specification, providing support
+    when run on browsers that implement the WebVR 1.1 spec, or on mobile devices with no WebVR/WebXR support at all.
+
+     --->
+
+
+    <style>
+        html, body {
+            overflow: hidden;
+            width   : 100%;
+            height  : 100%;
+            margin  : 0;
+            padding : 0;
+        }
+
+        #renderCanvas {
+            width   : 100%;
+            height  : 100%;
+            touch-action: none;
+        }
+    </style>
+
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+
+    /**/
+    // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
+    window.onerror = function(msg,url,line){
+        alert(msg+'\n'+url+'\nLine: '+line)
+        return true
+    }
+    /**/
+
+
+    console.log(window.location.protocol)
+    console.log("vr",navigator.getVRDisplays)
+    console.log("xr",navigator.xr)
+
+    // Für die 3D-Darstellung in MONO braucht Babylon weder WebVR noch WebXR, 3D ist der Sinn von Babylon.
+    // Für STEREO/Cardboard hat Babylon eigene Kammera-Typen. Notwendig, wenn es weder VR noch XR gibt (z.B. iPhone)
+
+    // Auf dem Mac geht WebVR? Naja, nicht immersiv, keine Brille. Was geht denn da? Das
+    // ist egal, wenn doch nur WebXR per polyfill verwendet wird. Dann geht auch keine
+    // Brille. Aber die macht auf dem Mac auch keinen Sinn.
+
+    // Auf dem Mac mit aktivem WebXR API Emulator geht so einiges:
+    // Die Brille kommt und STEREO geht. SO sollte man da XR testen!
+
+
+    var webvrOk = navigator.getVRDisplays!==undefined;
+    var webxrOk = navigator.xr!==undefined;
+    var web1rOk = webvrOk || webxrOk; // Wenn VR da ist geht auch polyXR
+    var web2rOk = webvrOk && webxrOk;
+    var httpsOk = window.location.protocol=="https:";
+    var search  = window.location.search;
+
+    if(!httpsOk && window.location.host!="localhost") {
+        console.log("reboot to activate httpS")
+        window.location = "https://"+ window.location.host + window.location.pathname;
+    }
+
+    if(webvrOk && !webxrOk && typeof(WebXRPolyfill) !== 'undefined') {
+        // Für Mac: VR=>XR oder XR-Emulaton
+        new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
+        webxrOk = navigator.xr!==undefined;
+        console.log("webXR polyfill activated")
+        console.log("xr",navigator.xr)
+
+        //VR weg wenn XR da? Wenn nötig
+        //navigator.getVRDisplays = undefined;
+        //webvrOk = navigator.getVRDisplays!==undefined;
+        //console.log("vr",navigator.getVRDisplays)
+    }
+
+    window.addEventListener('DOMContentLoaded', function(){
+
+        // get the canvas DOM element
+        var canvas = document.getElementById('renderCanvas');
+
+        // load the 3D engine
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // createScene function that creates and return the scene
+        var createScene = async function(){
+
+            // create a basic BJS Scene object
+            var scene = new BABYLON.Scene(engine);
+
+
+            // 3D scene content ///////////////////////////////////////////////////////
+            var material = new BABYLON.StandardMaterial("mat", scene);
+            var xxxxxx; material.emissiveColor = new BABYLON.Color3(1, 0, 0); // red
+            if(webvrOk) material.emissiveColor = new BABYLON.Color3(0, 0, 1); // blue: Mac=2d+Cardbord
+            if(webxrOk) material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
+            if(web2rOk) material.emissiveColor = new BABYLON.Color3(0, 1, 1); // green & blue: Mac+Emulation=2d+Cardbord
+
+            var box = BABYLON.MeshBuilder.CreateBox("box", {});
+            box.material = material;
+            // 3d content will be focust by helper camera
+
+
+
+            if(!web1rOk) { // https://www.babylonjs-playground.com/#12WBC#805
+
+                //// Das währe für iPhone ok. Es geht gleich in Stereo-Mode
+                //var camera = new BABYLON.VRDeviceOrientationFreeCamera ("Camera", new BABYLON.Vector3 (0,0,-2), scene); //
+                //console.log("Enable STEREO camera. z-min/max: ", camera.minZ,camera.maxZ);
+                //camera.attachControl(canvas, true);
+                //var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+
+                //// Aber auch ohne WebVR reagiert Babylon gut: Brille
+                console.log("Use non existing VR")
+                alert(      "Use non existing VR")
+                scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
+                var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+                const vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false}); //false???
+
+                //// Nur soll ja überall einheitlich Code für (emuliertes) WebXR genutzt werden
+                //// Leider geht das (gerade?) mit BJS nicht, spinnt, sogar HTTPS und Localhost verschieden
+                //// Daher kein generelles WebXR: Eine Klasse Device, die das automatische Wechseln der Lösung versteckt
+                //console.log("Use non existing XR")
+                //// Ohne Polyfill macht der Helper Error #0, obwohl wir nur die Emulation nutzen wollen.
+                //new WebXRPolyfill();
+                //var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+                //const xrHelper = await scene.createDefaultXRExperienceAsync({
+                //    floorMeshes: [environment.ground]
+                //}); //
+
+
+            }
+
+
+            else {
+                // auto view to existing objects
+                scene.createDefaultCameraOrLight(true,true,true); // createArcRotateCamera  replace_camera/light  attachCameraControls
+                var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+
+
+                if(webxrOk) { //  Don't care about webvrOk ???
+                    console.log("Enable XR")
+                    const xrHelper = await scene.createDefaultXRExperienceAsync({
+                        floorMeshes: [environment.ground]
+                    });
+                }
+
+            }
+
+
+
+
+
+
+/*** /
+            if(webvrOk && !webxrOk) {
+                console.log("Enable VR")
+                const vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false}); //false???
+            }
+
+            if(webxrOk && !webvrOk) {
+                console.log("Enable XR")
+                const xrHelper = await scene.createDefaultXRExperienceAsync({
+                    floorMeshes: []
+                }); // environment.ground
+            }
+
+            if(webvrOk && webxrOk) {
+                console.log("VR && XR") // alert("beides!")
+            }
+/***/
+
+
+            // run the render loop
+            engine.runRenderLoop(function(){
+                scene.render();
+            });
+
+
+            // return the created scene
+            return scene;
+        }
+
+        // call the createScene function. Why a function? Because it could wait (async, await)
+        var scene = createScene();
+
+        // the canvas/window resize event handler
+        window.addEventListener('resize', function(){
+            engine.resize();
+        });
+
+    });
+    </script>
+</body>
+</html>

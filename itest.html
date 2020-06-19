@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <title>Babylon-Test: Immerse</title>
+
+    <style>
+        html, body    { width: 100%; height: 100%; overflow: hidden; margin: 0; padding: 0; }
+        #renderCanvas { width: 100%; height: 100%; touch-action: none; }
+    </style>
+
+    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
+
+    <!--
+    -->
+
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+
+
+    <script type='module'>
+    //import { DefaultImmersiveExperience } from './immersive.js';
+    // Änderung in der js kommen beim iPhone nicht durch !!!
+    // Daher testen besser hier inline <====
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienceAsync
+
+
+    constructor(scene) {
+        this._scene = scene;
+        return this;
+    }
+
+
+    async init() {
+
+        this.webvrOk = navigator.getVRDisplays !== undefined;
+        this.webxrOk = navigator.xr            !== undefined;
+        console.log("WebVR", this.webvrOk)
+        console.log("WebXR", this.webxrOk)
+
+        if(!this.webvrOk && !this.webxrOk) {
+            console.log("No WebVR/XR, iPhone")
+            const vrHelper = this._scene.createDefaultVRExperience({createDeviceOrientationCamera:false});
+        } else {
+            if(this.webxrOk) {
+                console.log("WebXR ok, Quest")
+                const xrHelper = await this._scene.createDefaultXRExperienceAsync( { floorMeshes: [] } );
+            } else {
+                console.log("Only WebVR, mac")
+                this.polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
+                const xrHelper = await this._scene.createDefaultXRExperienceAsync( { floorMeshes: [] } );
+
+                this.immerOk = await BABYLON.WebXRSessionManager.IsSessionSupportedAsync('immersive-vr');
+                console.log("immersive",this.immerOk)
+            }
+        }
+
+
+    }
+
+    async addFloor(meshName) {
+        console.log(meshName);
+        if(xrHelper)
+            this.xrHelper.teleportation.addFloorMesh(meshName); // floorMeshName
+    }
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    /**/  // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
+    window.onerror = function(msg,url,line){ alert(msg+'\n'+url+'\nLine: '+line); return true; }
+    /**/
+
+    window.addEventListener('DOMContentLoaded', function(){
+
+        // get the canvas DOM element
+        var canvas = document.getElementById('renderCanvas');
+
+        // load the 3D engine
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // createScene function that creates and return the scene
+        var createScene = function(){
+            // create a basic BJS Scene object
+            var scene = new BABYLON.Scene(engine);
+
+            var iex = new DefaultImmersiveExperience(scene);
+            iex.init();
+
+
+            var box = BABYLON.MeshBuilder.CreateBox("box", {});
+            var material = new BABYLON.StandardMaterial("mat", scene);
+        //    if(iex.webxrOk) material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
+            box.material = material;
+
+            scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
+            var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+
+
+
+            // return the created scene
+            return scene;
+        }
+
+        // call the createScene function
+        var scene = createScene();
+
+        // run the render loop
+        engine.runRenderLoop(function(){
+            scene.render();
+        });
+
+        // the canvas/window resize event handler
+        window.addEventListener('resize', function(){
+            engine.resize();
+        });
+    });
+    </script>
+</body>
+</html>

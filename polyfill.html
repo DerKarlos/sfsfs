@@ -2,12 +2,16 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
-    <title>Babylon polyfill - Test</title>
+    <title>Babylon WebXR - Test</title>
     <!--- Link to the last version of BabylonJS --->
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <!---
+    <script src="https://preview.babylonjs.com/babylon.max.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
-        ---->
+    <!---
+            https://github.com/immersive-web/webxr-polyfill
+            <script src=    "https://cdn.babylonjs.com/babylon.max.js"></script>
+            <script src="https://preview.babylonjs.com/babylon.max.js"></script>
+            <script src="./lib/babylon_4.2/babylon.max.js"></script>
+    ---->
 
     <style>
         html, body {
@@ -29,88 +33,111 @@
 <body>
     <canvas id="renderCanvas"></canvas>
     <script>
-        window.addEventListener('DOMContentLoaded', function(){
-            // get the canvas DOM element
-            var canvas = document.getElementById('renderCanvas');
 
-            // load the 3D engine
-            var engine = new BABYLON.Engine(canvas, true);
+    var polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
 
-            // createScene function that creates and return the scene
-            var createScene = async function(){
-                // create a basic BJS Scene object
-                var scene = new BABYLON.Scene(engine);
+    var webvrOk = navigator.getVRDisplays!==undefined;
+    var webxrOk = navigator.xr!==undefined;
+    var web_rOk = webvrOk || webxrOk;
+    var httpsOk = window.location.protocol=="https:";
 
-                var box = BABYLON.MeshBuilder.CreateBox("box", {});
+    console.log("po",polyfill,polyfill.nativeWebXR);
+    console.log("vr",navigator.getVRDisplays);
+    console.log("xr",navigator.xr);
+    console.log("hs",window.location.protocol);
 
-                scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
-                var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+    if(!httpsOk && window.location.host!="localhost") window.location = "https://"+ window.location.host + window.location.pathname;
 
-
-                //** XR **************************************************************  
-
-                // here we add XR support
-                const vrHelper = await scene.createDefaultXRExperienceAsync({
-                    floorMeshes: [environment.ground]
-                });
-
-
-                var greenMat = new BABYLON.StandardMaterial("greenMat", scene);
-                greenMat.emissiveColor = new BABYLON.Color3(0, 1, 0);
-                box.material = greenMat;
+    if(httpsOk) {
+        if(web_rOk) console.log("WebXR and https are ok");  // XR startet per Brille
+        else              alert("NO WebXR! No VR-Symbol");  // kein Start möglich
+    } else {
+        if(webxrOk) {
+            if(polyfill) alert("No https but polyfill = ? ");
+            else         alert("NO https! WebXR disabled, Symbol to Cardboard mode only."); // macOS Firefox only
+        }
 
 
-                // run the render loop
-                engine.runRenderLoop(function(){
-                    scene.render();
-                });
+        else              alert("NO https and no WebXR! No VR-Symbol");   // kein Start möglich
+    }
+
+
+    /****
+    Oculus-Browser ok, XR vorhanden
+    Oculus-Firefox: "Error" in Brille, XR soll eigendlich gehen. Und es geht auch beim Playground! TODO
+    macOS-Firefox/Safari: No WebXR
+    macOS-Firefox XR-Emu: Only some WebXR, not realy
+    iOS-Safari: No WebXR (no fallback to VR in this code)
+    iOS-XRviewer: Can't show VR or Cardbord, only AR. "Script error Line 0", but continues. No XR-Symbol
+    ****/
+
+
+    /**/
+    // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
+    window.onerror = function(msg,url,line){
+        alert(msg+'\n'+url+'\nLine: '+line)
+        return true
+    }
+    /**/
 
 
 
-                /** VR ****************************************
+    window.addEventListener('DOMContentLoaded', function(){
 
-                // Enable VR/XR  (addon sim nur nach Tab-Reset und Zeit!)
-                var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: false});
+        // get the canvas DOM element
+        var canvas = document.getElementById('renderCanvas');
 
-                // Wait for xr init done and show if xr is running
-                scene.registerBeforeRender(function toRemove() {
-                    if (vrHelper.xrTestDone) {
+        // load the 3D engine
+        var engine = new BABYLON.Engine(canvas, true);
 
-                        if(vrHelper.xr!==undefined) {
-                            console.log("++++++++++++ WebXR enabled ++++++++++++");
-                            var greenMat = new BABYLON.StandardMaterial("greenMat", scene);
-                    	    greenMat.emissiveColor = new BABYLON.Color3(0, 1, 0);
-                            box.material = greenMat;
-                        }
+        // createScene function that creates and return the scene
+        var createScene = async function(){
+            // create a basic BJS Scene object
+            var scene = new BABYLON.Scene(engine);
 
-                        scene.unregisterBeforeRender(toRemove);
-                    }
-                })
+            var box = BABYLON.MeshBuilder.CreateBox("box", {});
 
-                ** VR ****************************************/
+            scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
+            var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
 
 
-                // return the created scene
-                return scene;
-            }
+            //** XR **************************************************************
 
-            // call the createScene function
-            var scene = createScene();
+            // here we add XR support
+            const xrHelper = await scene.createDefaultXRExperienceAsync({
+                floorMeshes: [environment.ground]
+            });
 
-            /**** VR
+
+            var material = new BABYLON.StandardMaterial("mat", scene);
+            /*        */ material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
+            if(!webxrOk) material.emissiveColor = new BABYLON.Color3(1, 0, 0); // red
+            if(!httpsOk) material.emissiveColor = new BABYLON.Color3(0, 0, 1); // blue
+            if(!webxrOk
+            && !httpsOk) material.emissiveColor = new BABYLON.Color3(1, 0, 1); // red & blue
+
+            box.material = material;
+
 
             // run the render loop
             engine.runRenderLoop(function(){
                 scene.render();
             });
 
-            VR ****/
 
-            // the canvas/window resize event handler
-            window.addEventListener('resize', function(){
-                engine.resize();
-            });
+            // return the created scene
+            return scene;
+        }
+
+        // call the createScene function
+        var scene = createScene();
+
+
+        // the canvas/window resize event handler
+        window.addEventListener('resize', function(){
+            engine.resize();
         });
+    });
     </script>
 </body>
 </html>

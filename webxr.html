@@ -7,7 +7,7 @@
     <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
     <!---
     <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
-        ---->
+    ---->
 
     <style>
         html, body {
@@ -30,19 +30,21 @@
     <canvas id="renderCanvas"></canvas>
     <script>
 
+    var webvrOk = navigator.getVRDisplays!==undefined;
     var webxrOk = navigator.xr!==undefined;
+    var web_rOk = webvrOk || webxrOk;
     var httpsOk = window.location.protocol=="https:";
 
-    if(!httpsOk) window.location = "https://"+ window.location.host + window.location.pathname;
-
     console.log("xr",navigator.xr)
-    console.log(window.location.protocol, window.location.protocol=="https:")
+    console.log(window.location.protocol)
+
+    if(!httpsOk && window.location.host!="localhost") window.location = "https://"+ window.location.host + window.location.pathname;
 
     if(httpsOk) {
-        if(webxrOk) console.log("WebXR and https are ok");  // XR startet per Brille
+        if(web_rOk) console.log("WebXR and https are ok");  // XR startet per Brille
         else              alert("NO WebXR! No VR-Symbol");  // kein Start möglich
     } else {
-        if(webxrOk)       alert("NO https! WebXR disabbled, XR-Symbol to Cardboard mode only."); // macOS Firefox only
+        if(webxrOk)       alert("NO https! WebXR disabled, Symbol to Cardboard mode only."); // macOS Firefox only
         else              alert("NO https and no WebXR! No VR-Symbol");   // kein Start möglich
     }
 
@@ -69,60 +71,60 @@
 
     window.addEventListener('DOMContentLoaded', function(){
 
-            // get the canvas DOM element
-            var canvas = document.getElementById('renderCanvas');
+        // get the canvas DOM element
+        var canvas = document.getElementById('renderCanvas');
 
-            // load the 3D engine
-            var engine = new BABYLON.Engine(canvas, true);
+        // load the 3D engine
+        var engine = new BABYLON.Engine(canvas, true);
 
-            // createScene function that creates and return the scene
-            var createScene = async function(){
-                // create a basic BJS Scene object
-                var scene = new BABYLON.Scene(engine);
+        // createScene function that creates and return the scene
+        var createScene = async function(){
+            // create a basic BJS Scene object
+            var scene = new BABYLON.Scene(engine);
 
-                var box = BABYLON.MeshBuilder.CreateBox("box", {});
+            var box = BABYLON.MeshBuilder.CreateBox("box", {});
 
-                scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
-                var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
-
-
-                //** XR **************************************************************
-
-                // here we add XR support
-                const xrHelper = await scene.createDefaultXRExperienceAsync({
-                    floorMeshes: [environment.ground]
-                });
+            scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
+            var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
 
 
-                var material = new BABYLON.StandardMaterial("mat", scene);
-                /*        */ material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
-                if(!webxrOk) material.emissiveColor = new BABYLON.Color3(1, 0, 0); // red
-                if(!httpsOk) material.emissiveColor = new BABYLON.Color3(0, 0, 1); // blue
-                if(!webxrOk
-                && !httpsOk) material.emissiveColor = new BABYLON.Color3(1, 0, 1); // red & blue
+            //** XR **************************************************************
 
-                box.material = material;
-
-
-                // run the render loop
-                engine.runRenderLoop(function(){
-                    scene.render();
-                });
-
-
-                // return the created scene
-                return scene;
-            }
-
-            // call the createScene function
-            var scene = createScene();
-
-
-            // the canvas/window resize event handler
-            window.addEventListener('resize', function(){
-                engine.resize();
+            // here we add XR support
+            const xrHelper = await scene.createDefaultXRExperienceAsync({
+                floorMeshes: [environment.ground]
             });
+
+
+            var material = new BABYLON.StandardMaterial("mat", scene);
+            /*        */ material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
+            if(!webxrOk) material.emissiveColor = new BABYLON.Color3(1, 0, 0); // red
+            if(!httpsOk) material.emissiveColor = new BABYLON.Color3(0, 0, 1); // blue
+            if(!webxrOk
+            && !httpsOk) material.emissiveColor = new BABYLON.Color3(1, 0, 1); // red & blue
+
+            box.material = material;
+
+
+            // run the render loop
+            engine.runRenderLoop(function(){
+                scene.render();
+            });
+
+
+            // return the created scene
+            return scene;
+        }
+
+        // call the createScene function
+        var scene = createScene();
+
+
+        // the canvas/window resize event handler
+        window.addEventListener('resize', function(){
+            engine.resize();
         });
+    });
     </script>
 </body>
 </html>

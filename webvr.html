@@ -2,15 +2,12 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
-    <title>Babylon V4.1 - Test</title>
+    <title>Babylon WebVR - Test</title>
     <!--- Link to the last version of BabylonJS --->
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
 
-    <!--
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="lib/babylon_4.0/babylon.max.js"></script>
-    <script src="lib/babylon_4.1/babylon.js"></script>
-    --->
+
+
 
     <style>
         html, body {
@@ -27,25 +24,42 @@
             touch-action: none;
         }
     </style>
+
 </head>
 <body>
     <canvas id="renderCanvas"></canvas>
     <script>
 
-
-    console.log("xr",navigator.xr)
-    console.log(window.location.protocol, window.location.protocol=="https:")
-
+    var webvrOk = navigator.getVRDisplays!==undefined;
     var webxrOk = navigator.xr!==undefined;
+    var web_rOk = webvrOk || webxrOk;
     var httpsOk = window.location.protocol=="https:";
+    var search  = window.location.search;
+
+    console.log("vr",navigator.getVRDisplays)
+    console.log("xr",navigator.xr)
+    console.log(window.location.protocol)
+
+    if(!httpsOk && window.location.host!="localhost") window.location = "https://"+ window.location.host + window.location.pathname;
 
     if(httpsOk) {
-        if(webxrOk) console.log("1) WebXR and https are ok")
-        else              alert("A) NO WebXR! No VR-Symbol");
+        if(web_rOk) console.log("WebVR and https are ok");  // VR startet per Brille
+        else              alert("NO WebVR! Cardboard mode only, orientation requested");
     } else {
-        if(webxrOk)       alert("B) NO https! WebXR disabbled, XR-Symbol to Cardboard mode only; Orientation may NOT run!");
-        else              alert("2) NO https and no WebXR! No VR-Symbol");
+        if(webvrOk)       alert("NO https! WebVR disabled, Cardboard mode only.");
+        else              alert("NO https! WebVR disabled, Stereo mode only, no orientation");
     }
+
+
+
+
+
+
+
+
+
+
+
 
     /**/
     // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
@@ -55,45 +69,51 @@
     }
     /**/
 
-     window.addEventListener('DOMContentLoaded', function(){
-         //error-test
 
-         // get the canvas DOM element
-         var canvas = document.getElementById('renderCanvas');
 
-         // load the 3D engine
-         var engine = new BABYLON.Engine(canvas, true);
+    window.addEventListener('DOMContentLoaded', function(){
+        //error-test
 
-         // createScene function that creates and return the scene
-         var createScene = function(){
-             // create a basic BJS Scene object
-             var scene = new BABYLON.Scene(engine);
+        // get the canvas DOM element
+        var canvas = document.getElementById('renderCanvas');
 
-              var box = BABYLON.MeshBuilder.CreateBox("box", {});
+        // load the 3D engine
+        var engine = new BABYLON.Engine(canvas, true);
 
-              scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
-             var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+        // createScene function that creates and return the scene
+        var createScene = function(){
+            // create a basic BJS Scene object
+            var scene = new BABYLON.Scene(engine);
 
-              // Enable VR/XR  (addon sim nur nach Tab-Reset und Zeit!)
-             var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false});
+            var box = BABYLON.MeshBuilder.CreateBox("box", {});
+            var material = new BABYLON.StandardMaterial("mat", scene);
+            if(webxrOk) material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
+            box.material = material;
 
-              // return the created scene
-             return scene;
-         }
+            scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects
+            var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
 
-          // call the createScene function
-         var scene = createScene();
+            // Enable VR/XR  (addon sim nur nach Tab-Reset und Zeit!)
+            var usexr    = search!=""; // only xr exists, it will be used anyway!
+            var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: usexr});
 
-          // run the render loop
-         engine.runRenderLoop(function(){
-             scene.render();
-         });
+            // return the created scene
+            return scene;
+        }
 
-          // the canvas/window resize event handler
-         window.addEventListener('resize', function(){
-             engine.resize();
-         });
-     });
+        // call the createScene function
+        var scene = createScene();
+
+        // run the render loop
+        engine.runRenderLoop(function(){
+            scene.render();
+        });
+
+        // the canvas/window resize event handler
+        window.addEventListener('resize', function(){
+            engine.resize();
+        });
+    });
     </script>
 </body>
 </html>
