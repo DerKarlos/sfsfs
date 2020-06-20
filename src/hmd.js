@@ -5,7 +5,7 @@ function rad(degrees)    { return degrees * (Math.PI/180); }  // import { rad  }
 export class HeadMountedDisplay {  // Used to be HeadUpDisplay. But it is not mounted to a veicle but to the head of the driver
 
 constructor(parent,scene) {
-    this.textColour = "rgba(255,255,255,1)"; // 0.5 is not good in Babylon???  // dunkelblau(0,0,172,0.75    gelb(255,255,0,65,0.5) habwegs druchsichtig?
+    this.textColour = "rgba(5,5,5,1)"; // 0.5 is not good in Babylon???  // dunkelblau(0,0,172,0.75    gelb(255,255,0,65,0.5) habwegs druchsichtig?
     this.textPx     = 64//32;//26
 
     this.size = 1024
@@ -26,7 +26,7 @@ constructor(parent,scene) {
     this.mesh.material   = material;
     this.mesh.position.z =   +1.001;
     this.mesh.rotation.x = rad(-90);
-    this.mesh.parent     = parent;
+    this.mesh.parent     = parent; // NO clone, HMD is in front of the parent
     this.mesh.isPickable = false;
 }
 
@@ -35,7 +35,7 @@ out(texte,limit) { // "with" may not be used with 'use strict';  !
 
     if(this.timer) {
         clearTimeout(this.timer);
-        this.timer = 0;
+        this.timer = undefined;
     }
 
 	if(texte) {
@@ -64,7 +64,7 @@ clear() {
 
 
 setParent(parent,offset) {
-    this.mesh.parent = parent;
+    this.mesh.parent     = parent; // HMD is in front of the parent
     this.mesh.position.y = (offset ? 1.6 : 0);
 }
 

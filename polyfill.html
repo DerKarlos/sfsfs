@@ -34,17 +34,23 @@
     <canvas id="renderCanvas"></canvas>
     <script>
 
-    var polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
-
     var webvrOk = navigator.getVRDisplays!==undefined;
     var webxrOk = navigator.xr!==undefined;
     var web_rOk = webvrOk || webxrOk;
     var httpsOk = window.location.protocol=="https:";
 
-    console.log("po",polyfill,polyfill.nativeWebXR);
+    console.log("po",polyfill);
     console.log("vr",navigator.getVRDisplays);
     console.log("xr",navigator.xr);
     console.log("hs",window.location.protocol);
+
+    var polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
+
+    webxrOk = navigator.xr!==undefined;
+    web_rOk = webvrOk || webxrOk;
+
+    console.log("po",polyfill,polyfill.nativeWebXR);
+    console.log("xr",navigator.xr);
 
     if(!httpsOk && window.location.host!="localhost") window.location = "https://"+ window.location.host + window.location.pathname;
 
