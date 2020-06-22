@@ -9,7 +9,7 @@
         #renderCanvas { width: 100%; height: 100%; touch-action: none; }
     </style>
 
-    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
+    <script src="https://preview.babylonjs.com/babylon.max.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
 
     <!--
@@ -20,11 +20,13 @@
     <canvas id="renderCanvas"></canvas>
 
     <script type='module'>
+
     import { HeadMountedDisplay  } from './src/hmd.js';
 
     //import { DefaultImmersiveExperience } from './immersive.js';
     // Änderung in der js kommen beim iPhone nicht durch !!!
     // Daher testen besser hier inline <====
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +37,13 @@ export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienc
         this._scene  = scene;
         this.camera  =
         this.deviceOrientationCamera = scene.cameras[0];
+        this.cameraChangedCallback = undefined;
         return this;
+    }
+
+
+    onCameraChanged(callback) {
+        this.cameraChangedCallback = callback;
     }
 
 
@@ -43,21 +51,21 @@ export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienc
 
         this.webvrOk = (navigator.getVRDisplays !== undefined) ? 1 : 0;
         this.webxrOk = (navigator.xr            !== undefined) ? 1 : 0;
-        console.log("WebVR", this.webvrOk)
-        console.log("WebXR", this.webxrOk)
+        console.log("WebVR", this.webvrOk);
+        console.log("WebXR", this.webxrOk);
 
-//        alert("VX: "+this.webvrOk+","+this.webxrOk)
+        //        alert("VX: "+this.webvrOk+","+this.webxrOk)
 
         if(!this.webvrOk && !this.webxrOk) {
             console.log("No WebVR/XR, iPhone")
             this.vrHelper = this._scene.createDefaultVRExperience( {createDeviceOrientationCamera:false} );
             await this.vrHelper
-            this.imCamera = this.vrHelper.webVRCamera; // const???
+            this.imCamera = this._scene.cameras[1]; // WHAT??? Not a solution!!! This does not work:   this.vrHelper.deviceOrientationCamera; // const???   webVRCamera    currentVRCamera  deviceOrientationCamera=mono  vrDeviceOrientationCamera=falback?
         } else {
             if(this.webxrOk) {
                 console.log("WebXR ok, Quest")
                 this.xrHelper = await this._scene.createDefaultXRExperienceAsync( { floorMeshes: [] } );
-                this.imCamera = this.xrHelper.baseExperience.camera
+                this.imCamera = this.xrHelper.baseExperience.camera // Not a solution!!! This does not work:
             } else {
                 console.log("Only WebVR, mac")
                 this.polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
@@ -72,22 +80,36 @@ export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienc
             }
         }
 
-
         if(this.xrHelper!==undefined)
-        this.xrHelper.baseExperience.onStateChangedObservable.add((state) => {
+        this.xrHelper.baseExperience.onStateChangedObservable.add( (state) => {
             switch(state) {
-                case BABYLON.WebXRState.NOT_IN_XR: this.camera = this.deviceOrientationCamera; break;
-                case BABYLON.WebXRState.IN_XR:     this.camera = this.imCamera;                break;
+                case BABYLON.WebXRState.NOT_IN_XR: this.cameraChanged(this.deviceOrientationCamera, false); break;
+                case BABYLON.WebXRState.IN_XR:     this.cameraChanged(this.imCamera               , true ); break;
             }
         });
+
+        if( this.vrHelper!==undefined)
+            this.vrHelper.onEnteringVRObservable.add(()=>{
+                this.cameraChanged(this.imCamera, true);
+            })
 
     }
 
 
-    async addFloor(meshName) {
-        console.log(meshName);
-        if(xrHelper)
-            this.xrHelper.teleportation.addFloorMesh(meshName); // floorMeshName
+    cameraChanged(camera,immersive) {
+        this.camera = camera;
+        if( this.cameraChangedCallback ) {
+            this.cameraChangedCallback(camera,immersive)
+        }
+    }
+
+
+
+    addFloorMesh(groundMesh) {
+        if( this.xrHelper )
+            this.xrHelper.teleportation.addFloorMesh(groundMesh);
+        if( this.vrHelper )
+            this.vrHelper.enableTeleportation({ floorMeshName: groundMesh.name });
     }
 
 
@@ -119,16 +141,7 @@ export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienc
             var iex = new DefaultImmersiveExperience(scene);
             await iex.init();
 
-            scene.hmd = new HeadMountedDisplay(iex.deviceOrientationCamera,scene); // xrHelper.baseExperience.camera
-
-            if(iex.xrHelper)
-            iex.xrHelper.baseExperience.onStateChangedObservable.add((state) => {
-                switch(state) {
-                    case BABYLON.WebXRState.NOT_IN_XR:
-                    case BABYLON.WebXRState.IN_XR:     scene.hmd.setParent(iex.camera ); break;
-                }
-                scene.hmd.out(["xr StateChanged",""+state] );
-            });
+            scene.hmd = new HeadMountedDisplay(iex.deviceOrientationCamera,scene,iex); // xrHelper.baseExperience.camera
 
             var fNEAR = 2;                          // to show the bike close by
             var fFAR  = 10*1000                     // to show the far away earth. Default: 10'000
@@ -138,7 +151,6 @@ export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienc
 
             scene.hmd.out(["TEST START", "itest"],4000);
 
-
             var box = BABYLON.MeshBuilder.CreateBox("box", {});
             box.position.z = 5;
             var material = new BABYLON.StandardMaterial("mat", scene);
@@ -146,8 +158,14 @@ export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienc
             box.material = material;
 
             var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
-
-
+            iex.addFloorMesh(environment.ground);
+/**
+            var environment = scene.createDefaultEnvironment({ enableGroundShadow: true });
+            if( iex.xrHelper )
+                iex.xrHelper.teleportation.addFloorMesh(environment.ground);
+            if( iex.vrHelper )
+                iex.vrHelper.enableTeleportation({ floorMeshName: environment.ground.name });
+**/
             // return the created scene
             return scene;
         }
@@ -159,7 +177,7 @@ export class DefaultImmersiveExperience {   // (create)DefaultImmersiveExperienc
         // run the render loop
         engine.runRenderLoop(function(){
             plus++;
-            scene.hmd.out(["plus: "+plus])
+//            scene.hmd.out(["plus: "+plus])
             scene.render();
         });
 
