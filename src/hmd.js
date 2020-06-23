@@ -1,8 +1,11 @@
 'use strict';
 
+
 function rad(degrees)    { return degrees * (Math.PI/180); }  // import { rad  } from './utils.js';
 
+
 export class HeadMountedDisplay {  // Used to be HeadUpDisplay. But it is not mounted to a veicle but to the head of the driver
+
 
 setParent(parent,dist,offset) {
     if(!dist) dist = 1.001;
@@ -11,7 +14,6 @@ setParent(parent,dist,offset) {
     this.mesh.position.z = dist;
     this.mesh.position.y = offset;
 }
-
 
 
 constructor(parent,scene,iex) {
