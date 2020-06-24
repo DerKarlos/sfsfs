@@ -1,94 +1,100 @@
-export class DefaultImmersiveExperience { //    (create)DefaultImmersiveExperienceAsync
+'use strict';
+
+BABYLON.Scene.prototype.createDefaultImmersiveExperienceAsync = async function() {
+    var ix = new DefaultImmersiveExperience(this);
+    await ix._init();
+
+    if (ix._webxrOk)
+        return ix._xrHelper; // return real xrHelper
+    else
+        return ix; // return this simulated xrHelper
+};
 
 
+class DefaultImmersiveExperience {
+
+
+    // TODO: How to make constructor Async?
     constructor(scene) {
         this._scene = scene;
-        this.camera =
-            this.deviceOrientationCamera = scene.cameras[0];
-        this.cameraChangedCallback = undefined;
+        this._webvrOk = (navigator.getVRDisplays === undefined) ? 0 : 1;
+        this._webxrOk = (navigator.xr === undefined) ? 0 : 1; // 2 = polyfill
+        console.log("WebVR:", this._webvrOk, " / WebXR:", this._webxrOk);
+        // alert("VX: "+this._webvrOk+","+this._webxrOk) // Test on iPhone
+        // this._webvrOk = this._webxrOk = 0;   console.log("TTTTTTTTTT E S TTTTTTTTT")
         return this;
     }
 
 
-    onCameraChanged(callback) {
-        this.cameraChangedCallback = callback;
-    }
+    private async _init() {
+
+        if (this._webxrOk) {
+            console.log("+++ WebXR ok, Oculus Quest etc. +++")
+            this._xrHelper = await this._scene.createDefaultXRExperienceAsync({
+                floorMeshes: []
+            });
 
 
-    async init() {
+        } else if (this._webvrOk) {
+            console.log("+++ Only WebVR, Apple Mac etc. +++")
+            this._polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
+            this._webxrOk = (navigator.xr !== undefined) ? 2 : -0;
+            console.log("WebXR:", this._webxrOk)
+            this._xrHelper = await this._scene.createDefaultXRExperienceAsync();
 
-        this.webvrOk = (navigator.getVRDisplays !== undefined) ? 1 : 0;
-        this.webxrOk = (navigator.xr !== undefined) ? 1 : 0;
-        console.log("WebVR", this.webvrOk);
-        console.log("WebXR", this.webxrOk);
+            this.immersiveOk = await BABYLON.WebXRSessionManager.IsSessionSupportedAsync('immersive-vr');
+            console.log("immersive", this.immersiveOk);
 
-        // alert("VX: "+this.webvrOk+","+this.webxrOk)
 
-        if (!this.webvrOk && !this.webxrOk) {
-            console.log("No WebVR/XR, iPhone")
-            this.vrHelper = this._scene.createDefaultVRExperience({
+        } else {
+            console.log("+++ No WebVR or XR: Cardboard, iPhone etc. +++")
+            this._vrHelper = await this._scene.createDefaultVRExperience({
                 createDeviceOrientationCamera: false
             });
-            await this.vrHelper
-            this.imCamera = this._scene.cameras[1]; // WHAT??? Not a solution!!! This does not work:   this.vrHelper.deviceOrientationCamera; // const???   webVRCamera    currentVRCamera  deviceOrientationCamera=mono  vrDeviceOrientationCamera=falback?
-        } else {
-            if (this.webxrOk) {
-                console.log("WebXR ok, Quest")
-                this.xrHelper = await this._scene.createDefaultXRExperienceAsync({
-                    floorMeshes: []
-                });
-                this.imCamera = this.xrHelper.baseExperience.camera // Not a solution!!! This does not work:
-            } else {
-                console.log("Only WebVR, mac")
-                this.polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
-                this.webxrOk = (navigator.xr !== undefined) ? 2 : -0;
-                console.log("WebXR=" + this.webxrOk)
-                this.xrHelper = await this._scene.createDefaultXRExperienceAsync();
-                await this.xrHelper;
-                this.imCamera = this.xrHelper.baseExperience.camera
 
-                this.immersiveOk = await BABYLON.WebXRSessionManager.IsSessionSupportedAsync('immersive-vr');
-                console.log("immersive", this.immersiveOk)
-            }
-        }
+            //// simulate WebXR interface. Only used if it is NOT (polyfilled) WebXR
+            this.teleportation = {};
+            this.baseExperience = {};
+            this.baseExperience.onStateChangedObservable = {};
+            this._stateChangedCallbacks = [];
 
-        if (this.xrHelper !== undefined)
-            this.xrHelper.baseExperience.onStateChangedObservable.add((state) => {
-                switch (state) {
-                    case BABYLON.WebXRState.NOT_IN_XR:
-                        this.cameraChanged(this.deviceOrientationCamera, false);
-                        break;
-                    case BABYLON.WebXRState.IN_XR:
-                        this.cameraChanged(this.imCamera, true);
-                        break;
-                }
+            this.teleportation.addFloorMesh = function(groundMesh) {
+                console.log(this)
+                this._vrHelper.enableTeleportation({
+                        floorMeshName: groundMesh.name
+                    } // only one?! Will it work on Cardboard? Hardly
+                );
+            }.bind(this); // TODO: find something better then bind
+
+            // set state change callback
+            this.baseExperience.onStateChangedObservable.add = function(stateChangedCallback) {
+                this._stateChangedCallbacks.push(stateChangedCallback);
+            }.bind(this);
+
+            // if entering VR: call back IN
+            this._vrHelper.onEnteringVRObservable.add(() => {
+                // Camear has not changed yet at this point. A infinite delay helps. TODO: Ask if this is the best/only way
+                setTimeout(() => {
+                    this._stateChangedCallbacks.forEach((item, i) => {
+                        item(BABYLON.IN_XR); // 0..3 ENTERING_XR EXITING_XR IN_XR NOT_IN_XR
+                    });
+                }, 0);
             });
 
-        if (this.vrHelper !== undefined)
-            this.vrHelper.onEnteringVRObservable.add(() => {
-                this.cameraChanged(this.imCamera, true);
-            })
-
-    }
-
-
-    cameraChanged(camera, immersive) {
-        this.camera = camera;
-        if (this.cameraChangedCallback) {
-            this.cameraChangedCallback(camera, immersive)
-        }
-    }
-
-
-
-    addFloorMesh(groundMesh) {
-        if (this.xrHelper)
-            this.xrHelper.teleportation.addFloorMesh(groundMesh);
-        if (this.vrHelper)
-            this.vrHelper.enableTeleportation({
-                floorMeshName: groundMesh.name
+            // if entering VR: call back OUT
+            this._vrHelper.onExitingVRObservable.add(() => {
+                setTimeout(() => {
+                    this._stateChangedCallbacks.forEach((item, i) => {
+                        item(BABYLON.NOT_IN_XR);
+                    });
+                }, 0);
             });
-    }
+
+            //// END: simulate WebXR interface ////
+        }
 
 
-}
+    } // init
+
+
+} // class

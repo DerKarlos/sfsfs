@@ -41,7 +41,7 @@
 
 
     var webvrOk = navigator.getVRDisplays!==undefined;
-    var webxrOk = navigator.xr!==undefined;
+    var webxrOk = navigator.xr !== undefined;
     var web_rOk = webvrOk || webxrOk;
     var httpsOk = window.location.protocol=="https:";
 

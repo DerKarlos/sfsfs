@@ -26,6 +26,9 @@
     <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
 
     <!--
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
+    <script src="https://preview.babylonjs.com/babylon.max.js"></script>
     -->
 
 </head>
@@ -34,16 +37,14 @@
     <canvas id="renderCanvas"></canvas>
 
     <script type='module'>
+        'use strict';
+
+        import './src/immersive.js';
         import {
             HeadMountedDisplay
         } from './src/hmd.js';
 
-        import {
-            DefaultImmersiveExperience
-        } from './src/immersive.js';
-
-
-        /**/ // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
+        /**/ // To see errors on touch devices
         window.onerror = function(msg, url, line) {
             alert(msg + '\n' + url + '\nLine: ' + line);
             return true;
@@ -52,43 +53,38 @@
 
         window.addEventListener('DOMContentLoaded', async function() {
 
-            // get the canvas DOM element
             var canvas = document.getElementById('renderCanvas');
-
-            // load the 3D engine
             var engine = new BABYLON.Engine(canvas, true);
 
             // createScene function that creates and return the scene
             var createScene = async function() {
-                // create a basic BJS Scene object
                 var scene = new BABYLON.Scene(engine);
 
-                // Die "normale" Kamera macht man vor der Immersiven
-                scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects !! Noch keine da!!
+                // Create the "default" camera/s[0] before immersive!
+                scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects (none there yet)
+                scene.activeCamera.radius = 4;
 
-                var iex = new DefaultImmersiveExperience(scene);
-                await iex.init();
+                var ix = await scene.createDefaultImmersiveExperienceAsync()
+                //              var ix = new DefaultImmersiveExperience(scene); //// <<===================================
+                //              await ix.init();
 
-                scene.hmd = new HeadMountedDisplay(iex.deviceOrientationCamera, scene, iex);
+                if (1) {
+                    scene.hmd = new HeadMountedDisplay(scene.activeCamera, scene, ix);
+                    scene.hmd.out(["TEST START", "immersive HMD"], 6000);
 
-                var fNEAR = 2; // to show the bike close by
-                var fFAR = 10 * 1000 // to show the far away earth. Default: 10'000
+                    var box = BABYLON.MeshBuilder.CreateBox("box", {});
+                    var material = new BABYLON.StandardMaterial("mat", scene);
+                    if (ix._webvrOk === undefined) material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
+                    box.material = material;
 
-                iex.camera.minZ /= fNEAR
-                iex.camera.maxZ *= fFAR
+                    var environment = scene.createDefaultEnvironment({
+                        enableGroundShadow: true
+                    });
 
-                scene.hmd.out(["TEST START", "itest"], 4000);
+                    ix.teleportation.addFloorMesh(environment.ground);
 
-                var box = BABYLON.MeshBuilder.CreateBox("box", {});
-                box.position.z = 5;
-                var material = new BABYLON.StandardMaterial("mat", scene);
-                if (iex.webxrOk) material.emissiveColor = new BABYLON.Color3(0, 1, 0); // green
-                box.material = material;
+                }
 
-                var environment = scene.createDefaultEnvironment({
-                    enableGroundShadow: true
-                });
-                iex.addFloorMesh(environment.ground);
 
                 // return the created scene
                 return scene;
