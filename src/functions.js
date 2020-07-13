@@ -1,37 +1,45 @@
-
 ///////////// Store URL parameter in array
 var gArr = undefined;
-var HTTP_GET_VARS=new Array();  // HTTP-Parameter sind viele Name=Wert Paare. Das "Array" hat keine Nummern-Index sondern verwendet den Namen! Genial.
-var strGET = document.location.search.substr(1,Math.min(document.location.search.length,1000)); // No unlimited string
-if( strGET!='')
-{
-  gArr = strGET.split('&');
-  for (var i in gArr)                   // Alle HTTP-Parameter
-  { var v=''; var vArr=gArr[i].split('=');  // In Name und Wert teilen
-    if(vArr.length>1){v=vArr[1];}   // Wert vorhanden? Merken.
-    HTTP_GET_VARS[unescape(vArr[0])] = unescape(v);  // Wert mit Index=Namen in Array.
-  }
+var HTTP_GET_VARS = new Array(); // HTTP-Parameter sind viele Name=Wert Paare. Das "Array" hat keine Nummern-Index sondern verwendet den Namen! Genial.
+var strGET = document.location.search.substr(1, Math.min(document.location.search.length, 1000)); // No unlimited string
+if (strGET != '') {
+    gArr = strGET.split('&');
+    for (var i in gArr) // Alle HTTP-Parameter
+    {
+        var v = '';
+        var vArr = gArr[i].split('='); // In Name und Wert teilen
+        if (vArr.length > 1) {
+            v = vArr[1];
+        } // Wert vorhanden? Merken.
+        HTTP_GET_VARS[unescape(vArr[0])] = unescape(v); // Wert mit Index=Namen in Array.
+    }
 }
 
 //// Name suchen und Wert zurückgeben
-export function getUrlParameter(v,d) {
-  if(   !HTTP_GET_VARS[v]){ return d; }   // Name als Index nicht vorhanden? return Defaultwert
-  return HTTP_GET_VARS[v];                // ansonsen return Wert zum Namen
+export function getUrlParameter(v, d) {
+    if (!HTTP_GET_VARS[v]) {
+        return d;
+    } // Name als Index nicht vorhanden? return Defaultwert
+    return HTTP_GET_VARS[v]; // ansonsen return Wert zum Namen
 }
 
 
-export function rad(degrees)    { return degrees * (Math.PI/180); }
-export function grad(rad)       { return rad     / (Math.PI/180); }
+export function rad(degrees) {
+    return degrees * (Math.PI / 180);
+}
+export function grad(rad) {
+    return rad / (Math.PI / 180);
+}
 
 
 export function limit(val, min, max) {
-  return val < min ? min : (val > max ? max : val);
+    return val < min ? min : (val > max ? max : val);
 }
 
 export function setCamera(absolutePosition, rotationQuaternion, vrHelper) {
-    var camera = vrHelper.currentVRCamera;        // if(vrHelper.isInVRMode)
-    camera.position           = absolutePosition;
-    if(rotationQuaternion)
+    var camera = vrHelper.currentVRCamera; // if(vrHelper.isInVRMode)
+    camera.position = absolutePosition;
+    if (rotationQuaternion)
         camera.rotationQuaternion = rotationQuaternion;
 }
 
@@ -61,35 +69,45 @@ export function setDeadZone(value) {
 }
 
 
-export function loadGlb(name,scene,success) {
+export function loadGlb(name, scene, success) {
 
-    BABYLON.Tools.corsbehavior = "anonymous";   // FileTools.CorsBehavior = “credentials”  /  "anonymous"   ??? videoTexture.video.crossOrigin = "anonymous";
-    BABYLON.SceneLoader.ImportMesh('', 'ships/', name+'.glb', scene, // wheelchair aufgabe_orion radiatoren
-        /* onSuccess: */ function (newMeshes) {
+    BABYLON.Tools.corsbehavior = "anonymous"; // FileTools.CorsBehavior = “credentials”  /  "anonymous"   ??? videoTexture.video.crossOrigin = "anonymous";
+    BABYLON.SceneLoader.ImportMesh('', 'ships/', name + '.glb', scene, // wheelchair aufgabe_orion radiatoren
+        /* onSuccess: */
+        function(meshes, particleSystems, skeletons) {
             // how do avoid to see the array for a moment???  It should also be noted that a mesh with a layerMask of 0, can never be seen by anyone. This might be good for hiding things.
-            console.log("loaded: "+name);
-            var glb = new BABYLON.Mesh(name, scene);
-            for(var index in newMeshes) {
-                var mesh = newMeshes[index]; //console.log("o." + index + " = " + mesh);
-                glb.addChild(mesh);
-            }
-            if(success)
+            console.log("loaded: " + name);
+            var glb = new BABYLON.TransformNode("TransformNode_"+name, scene); // Mesh
+
+            meshes.forEach((mesh, i) => {
+                if (mesh.parent == undefined) {
+                    mesh.parent = glb;
+                }
+            });
+
+            if (success)
                 success(glb);
         }.bind(this),
-        /* onProgress: */ function (event) {   console.log("model loaded: ", Math.floor(event.loaded/event.total*100)+"%") },
-        /* onError:    */ function (event) {   console.log("onError:"+name,event) }
-    );//ImportMesh
+        /* onProgress: */
+        function(event) {
+            //console.log(name + " loaded: ", Math.floor(event.loaded / event.total * 100) + "%")
+        },
+        /* onError:    */
+        function(scene, message, exception) {
+            console.log("onError:" + name, message)
+        }
+    ); //ImportMesh
 
 }
 
 export class Ramp { ////////////////////////////////////////////////// Ramp (helper CLASS) ////////////////////////////////////////////
 
-    constructor(up,down,initValue) {
-        if(!up)   up   = 1;
-        if(!down) down = up;
-        if(!initValue) initValue = 0;
-        this.up     = up;
-        this.down   = down;
+    constructor(up, down, initValue) {
+        if (!up) up = 1;
+        if (!down) down = up;
+        if (!initValue) initValue = 0;
+        this.up = up;
+        this.down = down;
         this.actual = initValue;
     }
 
@@ -99,22 +117,22 @@ export class Ramp { ////////////////////////////////////////////////// Ramp (hel
     }
 
 
-    ramping(set,dt) {
+    ramping(set, dt) {
 
-        var delta = set-this.actual;
-        var abs   = Math.abs( delta);
-        var sign  = Math.sign(delta);
-        var ramp  = (sign==Math.sign(this.actual)) ? this.up : this.down;
-        if( abs   > ramp*dt)
-            abs   = ramp*dt;
-        delta     = abs * sign;
+        var delta = set - this.actual;
+        var abs = Math.abs(delta);
+        var sign = Math.sign(delta);
+        var ramp = (sign == Math.sign(this.actual)) ? this.up : this.down;
+        if (abs > ramp * dt)
+            abs = ramp * dt;
+        delta = abs * sign;
 
         this.actual += delta;
         return this.actual;
     }
 
 
-}//class ramp
+} //class ramp
 
 
 export class Ramp3 {
@@ -125,7 +143,7 @@ export class Ramp3 {
         this.actual = new BABYLON.Vector3();
     }
 
-    ramping(x,y,z,dt) {
+    ramping(x, y, z, dt) {
         this.actual.x = this.x.ramping(x, dt);
         this.actual.y = this.y.ramping(y, dt);
         this.actual.z = this.z.ramping(z, dt);

@@ -1,240 +1,244 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8" />
     <title>Stars-Test</title>
     <style>
-    html, body { overflow:   hidden;    width: 100%;    height: 100%;     margin: 0;    padding: 0;    }
-    #viewer    { touch-action: none;    width: 100%;    height: 100%;                            }
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #viewer {
+            touch-action: none;
+            width: 100%;
+            height: 100%;
+        }
     </style>
+
+    <script src="./lib/babylon.max.js"></script>
+    <script src='./lib/webxr-polyfill.js'></script>
+
 </head>
+
 <body>
 
     <canvas id='viewer' />
-    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
-    <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
-<!--
-<script src="https://cdn.babylonjs.com/babylonjs.loaders.min.js"></script>
-<script src ='lib/babylon_4.0/babylonjs.loaders.min.js'> </script>
--->
+
     <script type='module'>
+        'use strict';
 
-    import { rad,grad       } from './src/functions.js';
-    import { HeadMountedDisplay  } from './src/hmd.js';
-//  import { WebXRPolyfill  } from './lib/webxr-polyfill.module.js.';
-    const polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
-    // info: https://github.com/immersive-web/webxr-polyfill
-
-    /**/
-    // To see errors on touch devices, activate this Errorhandler producing Ggalert dialogs
-    window.onerror = function(msg,url,line){
-        alert(msg+'\n'+url+'\nLine: '+line)
-        return true
-    }
-    /**/
-
-    ///////////// MAIN /////////////////////////////////
+        import {} from './src/immersive.js';
+        import {
+            rad,
+            grad
+        } from './src/functions.js';
+        import {
+            HeadMountedDisplay
+        } from './src/hmd.js';
 
 
-    var webvrOk = navigator.getVRDisplays!==undefined;
-    var webxrOk = navigator.xr!==undefined;
-    var web_rOk = webvrOk || webxrOk;
-    var httpsOk = window.location.protocol=="https:";
-
-    console.log("po",polyfill,polyfill.nativeWebXR);
-    console.log("vr",navigator.getVRDisplays);
-    console.log("xr",navigator.xr);
-    console.log("hs",window.location.protocol);
-
-    if(!httpsOk && window.location.host!="localhost") window.location = "https://"+ window.location.host + window.location.pathname;
-
-    var seconds  = 0;
-    var dSecX    = 1/60;
-    var xrHelper = undefined;
-    var ground   = undefined;
-    var user     = undefined; // local?
-
-    var points   = 0;
-
-
-    export class Space {
-
-        constructor(scene) {
-            this._scene = scene;
-            this._stars = [];
-            this.starMax = 10;
-
-            this.hit = new BABYLON.StandardMaterial("hit", scene);
-            this.hit.emissiveColor = BABYLON.Color3.Yellow();
-
-            this.wht = new BABYLON.StandardMaterial("white", scene);
-            this.wht.emissiveColor = BABYLON.Color3.White();
-
+        /**/
+        // To see errors on touch devices, activate this Errorhandler producing Ggalert dialogs
+        window.onerror = function(msg, url, line) {
+            alert(msg + '\n' + url + '\nLine: ' + line)
+            return true
         }
+        /**/
+
+        ///////////// MAIN /////////////////////////////////
 
 
-        stars() {
-            var swlf = 5;
-            var star = BABYLON.MeshBuilder.CreateSphere("star", {diameter: this.starMax/200}, this._scene);
-            var swif = BABYLON.MeshBuilder.CreateCylinder("swif", {height: this.starMax/swlf, diameterTop: 0.0, diameterBottom: this.starMax/400, tessellation: 16}, this._scene);
-            swif.rotation.x = rad(90)
-            swif.position.z = +this.starMax/swlf/2
-            star.material = this.wht;
-            swif.material = this.wht;
-            var meshes = [star,swif]
-            var merge = BABYLON.Mesh.MergeMeshes(meshes);
-            for(var z=1 ; z<2000 ; z++) {
-                var s = merge.clone("");
-                var max = this.starMax
-                s.position.x = -max + Math.random()*max*2;
-                s.position.y = -max + Math.random()*max*2 + 1.6;// + Augenhöhe
-                s.position.z = -max + Math.random()*max*2;
-                var scale = Math.random()/2 + 0.0000;
-                s.scaling = new BABYLON.Vector3(scale,scale,scale);
-                this._stars.push(s);
+        var seconds = 0;
+        var dSecX = 1 / 60;
+        var xrHelper = undefined;
+        var ground = undefined;
+        var user = undefined; // local?
+
+        var points = 0;
+
+
+        export class Space {
+
+            constructor(scene) {
+                this._scene = scene;
+                this._stars = [];
+                this.starMax = 10;
+                this.hitMax = 0.4;
+
+                this.hit = new BABYLON.StandardMaterial("hit", scene);
+                this.hit.emissiveColor = BABYLON.Color3.Yellow();
+
+                this.wht = new BABYLON.StandardMaterial("white", scene);
+                this.wht.emissiveColor = BABYLON.Color3.White();
+
             }
-            merge.dispose();
-        }
-        // stars
 
 
-        skyDome(xrHelper) { // This is so much more easy with BabylonJS
-            var pic1 = "sky.jpg"                                        // bunt
-            var pic2 = "cropped-starglobe-maya-render.jpg"              // black
-            var pic3 = "skydome-hdri-starlight-sky-3-3d-model.jpg"      // blue
-            var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_X_defish.png"    // X klein? Y *4
+            stars() {
+                var swlf = 5;
+                var star = BABYLON.MeshBuilder.CreateSphere("star", {
+                    diameter: this.starMax / 200
+                }, this._scene);
+                var swif = BABYLON.MeshBuilder.CreateCylinder("swif", {
+                    height: this.starMax / swlf,
+                    diameterTop: 0.0,
+                    diameterBottom: this.starMax / 400,
+                    tessellation: 16
+                }, this._scene);
+                swif.rotation.x = rad(90)
+                swif.position.z = +this.starMax / swlf / 2
+                star.material = this.wht;
+                swif.material = this.wht;
+                var meshes = [star, swif]
+                var merge = BABYLON.Mesh.MergeMeshes(meshes);
+                for (var z = 1; z < 2000; z++) {
+                    var s = merge.clone("");
+                    var max = this.starMax
+                    s.position.x = -max + Math.random() * max * 2;
+                    s.position.y = -max + Math.random() * max * 2 + 1.6; // + Augenhöhe
+                    s.position.z = -max + Math.random() * max * 2;
+                    var scale = Math.random() / 2 + 0.0000;
+                    s.scaling = new BABYLON.Vector3(scale, scale, scale);
+                    this._stars.push(s);
+                }
+                merge.dispose();
+            }
+            // stars
 
-            // ???p './media/'+pic4
-        	this.sky = new BABYLON.PhotoDome("sky", './media/'+pic4, {size: xrHelper.baseExperience.camera.maxZ*0.9}, this._scene); //bbb resolution: 64,size: radius*2
-        	this.sky.infiniteDistance = true;
-            this.sky.rotation.y = grad(45);
-            // ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
-            // https://forum.babylonjs.com/t/babylon-photodome-causes-webgl-warning-uniformblockbinding-using-firefox/11515
+
+            skyDome(xrHelper) { // This is so much more easy with BabylonJS
+                var pic1 = "sky.jpg" // bunt
+                var pic2 = "cropped-starglobe-maya-render.jpg" // black
+                var pic3 = "skydome-hdri-starlight-sky-3-3d-model.jpg" // blue
+                var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_X_defish.png" // X klein? Y *4
+
+                // ???p './media/'+pic4
+                this.sky = new BABYLON.PhotoDome("sky", './media/' + pic4, {
+                    size: this._scene.activeCamera.maxZ * 0.9
+                }, this._scene); //bbb resolution: 64,size: radius*2
+                this.sky.infiniteDistance = true;
+                this.sky.rotation.y = grad(45);
+                // ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
+                // https://forum.babylonjs.com/t/babylon-photodome-causes-webgl-warning-uniformblockbinding-using-firefox/11515
                 // about:config  webgl.disable-angle;true webgl.bypass-shader-validation;true
 
-            //this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
-            /**/
-        	return this.sky;
-        }
-        // skyDome
+                //this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
+                /**/
+                return this.sky;
+            }
+            // skyDome
 
 
-        animate(dSec,px,py,pz) {
+            animate(dSec, px, py, pz) {
 
-            var points = 0;
+                var points = 0;
 
-            for(var i=0 ; i<this._stars.length-1 ; i++) {
-                var s = this._stars[i];
-                var z = s.position.z - dSec*this.starMax/5;
+                for (var i = 0; i < this._stars.length - 1; i++) {
+                    var s = this._stars[i];
+                    var z = s.position.z - dSec * this.starMax / 5;
 
 
-                var max = 0.10*4
-                if(    (Math.abs(s.position.x-px) < max)
-                    && (Math.abs(s.position.y-py) < max)
-                    && (Math.abs(s.position.z-pz) < max)
-                    && s.material!=this.hit) {
-                    s.material = this.hit;
-                    points++;
-                }
-
-                if(z < -this.starMax) {
-                    z+= (2*this.starMax)
-                    if( s.material==this.hit) {
-                        s.material= this.wht;
+                    var max = this.hitMax // 0.10 * 4
+                    if ((Math.abs(s.position.x - px) < max) &&
+                        (Math.abs(s.position.y - py) < max) &&
+                        (Math.abs(s.position.z - pz) < max) &&
+                        s.material != this.hit) {
+                        s.material = this.hit;
+                        points++;
                     }
 
-                    var max = this.starMax
-                    s.position.x = -max + Math.random()*max*2;
-                    s.position.y = -max + Math.random()*max*2 + 1.6;// + Augenhöhe
+                    if (z < -this.starMax) {
+                        z += (2 * this.starMax)
+                        if (s.material == this.hit) {
+                            s.material = this.wht;
+                        }
+
+                        var max = this.starMax
+                        s.position.x = -max + Math.random() * max * 2;
+                        s.position.y = -max + Math.random() * max * 2 + 1.6; // + Augenhöhe
+                    }
+
+                    s.position.z = z;
+
                 }
+                return points;
 
-                s.position.z = z;
+            } //animate
 
-            }
-            return points;
-
-        }//animate
-
-    }
+        }
 
 
 
-    window.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('DOMContentLoaded', async function() {
 
-        //// INIT
-        var canvas = document.getElementById('viewer');
-        var engine = new BABYLON.Engine(canvas, true);
-        var scene  = new BABYLON.Scene (engine);
-        var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(1,1,1), scene);
+            //// INIT
+            var canvas = document.getElementById('viewer');
+            var engine = new BABYLON.Engine(canvas, true);
+            var scene = new BABYLON.Scene(engine);
+            var light = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(1, 1, 1), scene);
 
-        scene.clearColor = BABYLON.Color3.Black();
-
-
-        var fNEAR = 2;                          // to show the bike close by
-        var fFAR  = 10*1000                     // to show the far away earth. Default: 10'000
+            // Create the "default" (arc rot.) camera before immersive!
+            scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects (none there yet)
+            scene.clearColor = BABYLON.Color3.Black();
 
 
-        // here we add XR support
-        const xrHelper = await scene.createDefaultXRExperienceAsync({
-            //??? floorMeshes: [environment.ground]
-        });
-        console.log(xrHelper);
-    //  console.log(xrHelper.baseExperience.camera.position)
-    //  console.log(xrHelper.baseExperience.camera.globalPosition)
+            var fNEAR = 2; // to show the bike close by
+            var fFAR = 10 * 1000 // to show the far away earth. Default: 10'000
 
-        xrHelper.baseExperience.camera.minZ     /= fNEAR
-        xrHelper.baseExperience.camera.maxZ     *= fFAR
+            scene.activeCamera.minZ /= fNEAR
+            scene.activeCamera.maxZ *= fFAR
 
-        xrHelper.baseExperience.onStateChangedObservable.add((state) => {
-            scene.hmd.out(["bin ..."]);
-            setTimeout(function() {
-                scene.hmd.out(["bin drin"]);
-            }, 500);
-        });
+            var ix = await scene.createDefaultImmersiveExperienceAsync()
+            scene.hmd = new HeadMountedDisplay(scene.activeCamera, scene, ix);
+            scene.hmd.out(["TEST START", "move mode: " + scene.moveMode], 4000);
 
-        scene.hmd = new HeadMountedDisplay(xrHelper.baseExperience.camera,scene);
-        scene.hmd.out(["TEST START", "move mode: "+scene.moveMode],4000);
+            var space = new Space(scene);
+            space.skyDome(xrHelper)
+            space.stars();
+
+            if (scene.moveMode > 1)
+                user.control = new Control(user, scene, engine, ix);
 
 
+            //// RENDER CYCLE
+            engine.runRenderLoop(function() {
+                var dSec1 = engine._deltaTime / 1000
+                seconds += dSec1;
 
-        var space = new Space(scene);
-        space.skyDome(xrHelper)
-        space.stars();
+                // Why is dSec so irregular??? It causes optical odds while rotating
+                var fact = 6
+                dSecX = (dSecX * (fact - 1) + dSec1) / fact;
 
-        if(scene.moveMode>1)
-        user.control = new Control(user, scene, engine, xrHelper);
+                var position = scene.activeCamera.getFrontPosition(0); // devicePosition
 
+                scene.hmd.out([
+                    "Stars: " + points,
+                    "",
+                    "xPos " + Math.floor(position.x * 1000),
+                    "yPos " + Math.floor(position.y * 1000),
+                    "zPos " + Math.floor(position.z * 1000),
+                ]);
 
+                points += space.animate(dSecX, position.x, position.y, position.z);
 
-        //// RENDER CYCLE
-        engine.runRenderLoop(function() {
-            var dSec1 = engine._deltaTime / 1000
-            seconds += dSec1;
-
-            // Why is dSec so irregular??? It causes optical odds while rotating
-            var fact = 6
-            dSecX = ( dSecX*(fact-1)+dSec1 ) / fact;
-
-            var position = xrHelper.baseExperience.camera.getFrontPosition(0); // devicePosition
-
-            scene.hmd.out([
-                "Stars: "+points,
-                "",
-                "xPos "+Math.floor(position.x*1000),
-                "yPos "+Math.floor(position.y*1000),
-                "zPos "+Math.floor(position.z*1000),
-            ]);
-
-            points += space.animate(dSecX,position.x,position.y,position.z);
-
-            scene.render();
-        });
+                scene.render();
+            });
 
 
-    });// DOMContentLoaded
+            // the canvas/window resize event handler
+            window.addEventListener('resize', function(){
+                engine.resize();
+            });
 
-
+        }); // DOMContentLoaded
     </script>
 
 </body>
+
 </html>

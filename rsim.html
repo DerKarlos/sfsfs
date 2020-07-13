@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8" />
+    <title>Babylon-Test: Orion 3</title>
+
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+
+    <script src="./lib/babylon.max.js           "></script>
+    <script src='./lib/webxr-polyfill.js        '> </script>
+    <script src='./lib//babylonjs.loaders.min.js'> </script>
+
+</head>
+
+<body>
+    <canvas id="renderCanvas"></canvas>
+
+    <script type='module'>
+        'use strict';
+
+        import {} from './src/immersive.js';
+        import {
+            OrionIX
+        } from './ships/orionix.js';
+        import {
+            Space
+        } from './src/space.js';
+        import {
+            rad,
+            grad,
+            getUrlParameter,
+            loadGlb,
+            limit
+        } from './src/functions.js';
+
+        /**/ // To see errors on touch devices
+        window.onerror = function(msg, url, line) {
+            alert(msg + '\n' + url + '\nLine: ' + line);
+            return true;
+        }
+        /**/
+
+        window.addEventListener('DOMContentLoaded', async function() {
+
+            var canvas = document.getElementById('renderCanvas');
+            var engine = new BABYLON.Engine(canvas, true);
+
+            var orion = undefined;
+            var richtung = 1;
+
+            function upDown() {
+                setTimeout(upDown,20000);
+                richtung *= -1;
+                orion.SchachtSpeed(richtung*0.1)
+            }
+
+
+            // createScene function that creates and return the scene
+            var createScene = async function() {
+                var scene = new BABYLON.Scene(engine);
+
+                // Create the "default" (arc rot.) camera before immersive!
+                scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects (none there yet)
+
+                //					  1m  1km  1Mm  1GM  1Tm   Erdradius ca. 6,3 Mm
+                var FAR = 1000 * 1000 * 1000 * 1000 * 1000 // Infinity geht nicht bem ORbitControl;   //10000 zu 10 = 1000:1 = ok?!
+                var NEAR = 1 //0.52
+
+                //                var camera = new BABYLON.ArcRotateCamera("Camera", 0, 0, 4.0, new BABYLON.Vector3(0, 0, 0), scene);
+                // name alpha beta radius target:Vector3 scene setActiveOnSceneIfNoneActive?:boolean
+                scene.activeCamera.radius = 40; // why not at new ...???
+                scene.activeCamera.beta = rad(90 - 10);
+                scene.activeCamera.maxZ = FAR;
+                scene.activeCamera.minZ = NEAR;
+                scene.moveMode = limit(getUrlParameter("m", 1) * 1, 1, 3);
+
+                var ix = await scene.createDefaultImmersiveExperienceAsync()
+
+
+                var space = new Space(scene);
+                space.groundCylinder(200, scene.moveMode == 1, ix);
+                space.skyDome(scene.activeCamera);
+
+
+                orion = new OrionIX(new BABYLON.Vector3(-20, 0, 0), null, null, null, scene, function(model, orion) {
+
+                    var m50 = new OrionIX(new BABYLON.Vector3(+30, 0, 0), null, null, null, scene)
+                    var scale = 0.3333; // 150m => 50m
+                    m50.model.scaling = new BABYLON.Vector3(scale, scale, scale);
+
+                    var m1x = new OrionIX(new BABYLON.Vector3(0, 1, -30), null, null, null, scene)
+                    var scale = 0.01; // 150m => 1.5m
+                    m1x.model.scaling = new BABYLON.Vector3(scale, scale, scale);
+//                  m1x.Schacht(1); // Lift ausfahren
+
+                    var dicke = 0.04;
+                    var material = new BABYLON.StandardMaterial("material", scene);
+                    material.ambientColor = material.diffuseColor = BABYLON.Color3.Green();
+                    var tisch = BABYLON.MeshBuilder.CreateCylinder("tisch", {
+                        height: dicke,
+                        diameter: 1.7
+                    }, scene);
+                    tisch.position.y = 1.0 - dicke / 2;
+                    tisch.position.z = -30;
+                    tisch.material = material
+
+                    upDown();
+                })
+
+
+                // return the created scene
+                return scene;
+            }
+
+            // call the createScene function
+            var scene = await createScene();
+
+            // run the render loop
+            var seconds = 0;
+            var dSecX = 1 / 60;
+            engine.runRenderLoop(function() {
+
+                var dSec1 = engine._deltaTime / 1000
+                seconds += dSec1;
+
+                // Why is dSec so irregular??? It causes optical odds while rotating
+                var fact = 6
+                dSecX = (dSecX * (fact - 1) + dSec1) / fact;
+
+
+                orion.Update(dSecX)
+                scene.render();
+            });
+
+            // the canvas/window resize event handler
+            window.addEventListener('resize', function() {
+                engine.resize();
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -31,12 +31,10 @@ export class HeadMountedDisplay { // Used to be HeadUpDisplay. But it is not mou
         }, scene);
         this.texture.hasAlpha = true;
         this.timer = undefined;
-        var ctx =
-            this.texture.getContext();
+        var ctx = this.texture.getContext();
         ctx.fillStyle = 'transparent';
 
-        var
-            material = new BABYLON.StandardMaterial('', scene);
+        var material = new BABYLON.StandardMaterial('', scene);
 
         material.diffuseTexture = this.texture;
         material.opacityTexture = this.texture;

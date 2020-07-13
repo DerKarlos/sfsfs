@@ -28,8 +28,15 @@ export class Space {
         var pic3 = "skydome-hdri-starlight-sky-3-3d-model.jpg"      // blue
         var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_X_defish.png"    // X klein? Y *4
 
+        if(          typeof xrHelper.baseExperience !== "undefined") {
+            console.log("\\\\\\ CALL: space.js skyDome(scene.actualCamera)")
+            var camera = xrHelper.baseExperience.camera
+        } else {
+            var camera = xrHelper;
+        }
+
         // ???p './media/'+pic4
-    	this.sky = new BABYLON.PhotoDome("sky", './media/'+pic4, {size: xrHelper.baseExperience.camera.maxZ*0.9}, this._scene); //bbb resolution: 64,size: radius*2
+    	this.sky = new BABYLON.PhotoDome("sky", './media/'+pic4, {size: camera.maxZ*0.9}, this._scene); //bbb resolution: 64,size: radius*2
     	this.sky.infiniteDistance = true;
         this.sky.rotation.y = grad(45);
         // ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
@@ -62,6 +69,29 @@ export class Space {
         return ground;
 
     }
+
+/**/
+
+groundCylinder(size,teleport,xrHelper) {
+
+    const spec = 0.2  // ein bischen Glanz ist ok
+    var url = "./media/tiles512.jpg"
+    var material = new BABYLON.StandardMaterial("tiles", this._scene);
+        material.specularColor = new BABYLON.Color3(spec,spec,spec);  /// JUHU der sch.. Glanz ist weg!
+
+    var ground = BABYLON.MeshBuilder.CreateDisc("round", {radius: size}, this._scene)
+    //               BABYLON.Mesh.CreateGround("ground", size, size, 1, this._scene);
+    ground.rotation.x = rad(90);
+    ground.material = material;
+    if(teleport)
+        xrHelper.teleportation.addFloorMesh(ground); // floorMeshName: "ground"
+
+    material.diffuseTexture = new BABYLON.Texture(url, this._scene);
+    material.diffuseTexture.uScale =
+    material.diffuseTexture.vScale = size/100;
+    return ground;
+
+}
 
 /**/
 

@@ -1,0 +1,21 @@
+How to get Babylon.js
+https://doc.babylonjs.com/babylon101/how_to_get
+
+
+"cdn" may also be "preview"
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/babylon.max.js"></script>
+<script src="https://cdn.babylonjs.com/babylonjs.loaders.min.js"></script>
+
+NO "cdn" !!
+<script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+<script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+
+Other
+<script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
+
+
+---
+notes
+
+<script src="./lib/babylon.gui.min.js"></script>

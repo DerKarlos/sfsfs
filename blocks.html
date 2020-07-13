@@ -1,238 +1,302 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8" />
     <title>BLOCKS</title>
     <style>
-    html, body { overflow:   hidden;    width: 100%;    height: 100%;     margin: 0;    padding: 0;    }
-    #viewer    { touch-action: none;    width: 100%;    height: 100%;                            }
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #viewer {
+            touch-action: none;
+            width: 100%;
+            height: 100%;
+        }
     </style>
+
+    <script src="./lib/babylon.max.js"></script>
+    <script src="./lib/babylon.gui.min.js"></script>
+    <script src='./lib/webxr-polyfill.js'></script>
+
 </head>
+
 <body>
 
     <canvas id='viewer' />
-    <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
-    <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
-    <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-    <script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script>
-<!--
--->
+
     <script type='module'>
-    import { HeadMountedDisplay  } from './src/hmd.js';
-    import { Space          } from './src/space.js';
+        import {} from './src/immersive.js';
+        import {
+            HeadMountedDisplay
+        } from './src/hmd.js';
+        import {
+            Space
+        } from './src/space.js';
 
-    import { rad,grad,setDeadZone,loadGlb,Ramp,Ramp3,getUrlParameter,limit  } from './src/functions.js';
-//  import { WebXRPolyfill  } from './lib/webxr-polyfill.module.js.'; // only abowe ok!!! becaus of httpS?
-//  const polyfill = new WebXRPolyfill(); // now, navigator.xr should exist. Returns object with .nativeWebXR
-    // info: https://github.com/immersive-web/webxr-polyfill
+        import {
+            rad,
+            grad,
+            setDeadZone,
+            loadGlb,
+            Ramp,
+            Ramp3,
+            getUrlParameter,
+            limit
+        } from './src/functions.js';
 
-    /**/
-    // To see errors on touch devices, activate this Errorhandler producing Ggalert dialogs
-    window.onerror = function(msg,url,line){
-        alert(msg+'\n'+url+'\nLine: '+line)
-        return true
-    }
-    /**/
+        /**/
+        // To see errors on touch devices, activate this Errorhandler producing Ggalert dialogs
+        window.onerror = function(msg, url, line) {
+            alert(msg + '\n' + url + '\nLine: ' + line)
+            return true
+        }
+        /**/
 
-    ///////////// MAIN /////////////////////////////////
+        ///////////// MAIN /////////////////////////////////
 
+        var seconds = 0;
+        var dSecX = 1 / 60;
 
-    var webvrOk = navigator.getVRDisplays!==undefined;
-    var webxrOk = navigator.xr!==undefined;
-    var web_rOk = webvrOk || webxrOk;
-    var httpsOk = window.location.protocol=="https:";
+        var pressed = 0;
+        var box = undefined;
+        const boxSize = 0.25;
+        var lastBox = undefined
+        var gostRight = undefined
+        var gostLeft = undefined
 
-    //nsole.log("polyfill",polyfill,polyfill.nativeWebXR);
-    console.log(".getVRDisplays",navigator.getVRDisplays);
-    console.log(".xr",navigator.xr);
-    if(!httpsOk) console.log("protocol",window.location.protocol);
+        const spec = 0.2 // ein bischen Glanz ist ok
+        var specular0 = new BABYLON.Color3(spec, spec, spec); // Das setzt Babylon automatisch mit diffuseColor ?!? Forum!
 
-    if(!httpsOk && window.location.host!="localhost") window.location = "https://"+ window.location.host + window.location.pathname;
+        var xrControllerRight = undefined;
+        var xrControllerLeft = undefined;
 
+        function blockToggle(scene, position) {
+            var i_x = ((position.x / boxSize + 0.5)).toFixed(0);
+            var i_z = ((position.z / boxSize + 0.5)).toFixed(0);
+            var i_y = ((position.y / boxSize + 0.5)).toFixed(0);
+            var name = "box:" + i_x + "," + i_y + "," + i_z;
+            console.log(name, position);
 
-    var seconds  = 0;
-    var dSecX    = 1/60;
+            //  var existing = scene.getChildMeshes(false, (node) => { return node.name.indexOf(name) !== -1 });
 
-    var pressed  = 0;
-    var box = undefined;
-    const boxSize = 0.25;
-    var lastBox = undefined
+            var found = scene.meshes.filter(function(child, index, array) {
+                return child.name == name;
+            });
+            console.log(found, scene.meshes);
+            if (found.length > 0) {
+                console.log("name -- ", found[0].name);
+                scene.removeMesh(found[0]);
+            } else {
+                var brig = box.clone("");
+                brig.material = box.material.clone("");
+                brig.position = new BABYLON.Vector3(
+                    i_x * boxSize - boxSize / 2,
+                    i_y * boxSize - boxSize / 2,
+                    i_z * boxSize - boxSize / 2);
+                brig.name = name;
+                lastBox = brig;
+                console.log("name ++ ", brig.name);
+            } //else
 
-    const spec = 0.2  // ein bischen Glanz ist ok
-    var specular0 = new BABYLON.Color3(spec,spec,spec); // Das setzt Babylon automatisch mit diffuseColor ?!? Forum!
-
-
-    function blockToggle(scene,position) {
-        var ix = ((position.x/boxSize+0.5)).toFixed(0);
-        var iz = ((position.z/boxSize+0.5)).toFixed(0);
-        var iy = ((position.y/boxSize+0.5)).toFixed(0);
-        var name = "box:"+ix+","+iy+","+iz;
-        console.log(name,position);
-    //    var existing = scene.getChildMeshes(false, (node) => { return node.name.indexOf(name) !== -1 });
-
-        var found = scene.meshes.filter(function (child, index, array) {
-          return child.name == name;
-        });
-        console.log(found,scene.meshes);
-        if(found.length>0) {
-            console.log("name -- ",found[0].name);
-            scene.removeMesh(found[0]);
-        } else {
-            var brig = box.clone("");
-            brig.material = box.material.clone("");
-            brig.position = new BABYLON.Vector3(ix*boxSize-boxSize/2,
-                                                iy*boxSize-boxSize/2,
-                                                iz*boxSize-boxSize/2);
-            brig.name = name;
-            lastBox = brig;
-            console.log("name ++ ",brig.name);
         }
 
 
-    }
+        window.addEventListener('DOMContentLoaded', async function() {
 
+            //// INIT
+            var canvas = document.getElementById('viewer');
+            var engine = new BABYLON.Engine(canvas, true);
+            var scene = new BABYLON.Scene(engine);
+            //    var light = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(1, 0, 1), scene);
 
-    window.addEventListener('DOMContentLoaded', async function() {
-
-        //// INIT
-        var canvas = document.getElementById('viewer');
-        var engine = new BABYLON.Engine(canvas, true);
-        var scene  = new BABYLON.Scene (engine);
-        var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(1,0,1), scene);
-
-        scene.clearColor = BABYLON.Color3.Black();
-        scene.moveMode   = limit( getUrlParameter("m",1) * 1 ,1, 3);
-
-
-
-
-        var fNEAR = 2;                          // to show the bike close by
-        var fFAR  = 10*1000                     // to show the far away earth. Default: 10'000
+            // Create the "default" (arc rot.) camera before immersive!
+            scene.createDefaultCameraOrLight(true, true, true) // auto view to existing objects (none there yet)
+            scene.clearColor = BABYLON.Color3.Black();
+            scene.activeCamera.radius = 4;
+            scene.activeCamera.beta = rad(90 - 15);
+            scene.moveMode = limit(getUrlParameter("m", 1) * 1, 1, 3);
 
 
 
-        // here we add XR support
-        const xrHelper = await scene.createDefaultXRExperienceAsync({
-        });
 
-        xrHelper.baseExperience.camera.minZ     /= fNEAR
-        xrHelper.baseExperience.camera.maxZ     *= fFAR
-
-        scene.hmd = new HeadMountedDisplay(xrHelper.baseExperience.camera,scene);
-        scene.hmd.out(["TEST START"],5000);
-
-        var space = new Space(scene);
-        space.ground(100, scene.moveMode==1, xrHelper);
-        space.skyDome(xrHelper);
-
-
-        var material = new BABYLON.StandardMaterial("material", scene); material.diffuseColor = BABYLON.Color3.Yellow();  // nicht specularColor oder emissiveColor!   ambientColor=0 ist unwirksam
-        material.specularColor = specular0; //new BABYLON.Color3(); // Das setzt Babylon automatisch mit diffuseColor ?!? Forum!
-        box = BABYLON.MeshBuilder.CreateBox("box", {size:boxSize, sideOrientation: BABYLON.Mesh.DOUBLESIDE }, scene);
-        box.material   = material;
-        box.position.y = boxSize/2-9; // hide
-        box.position.z = 5;
-
-
-        // GUI +++
-        var plane = BABYLON.Mesh.CreatePlane("plane", 1);
-        plane.position = new BABYLON.Vector3(0, 1.5, 1.5);
-        //plane.parent     = xrHelper.baseExperience.camera;
-        var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
-        var panel = new BABYLON.GUI.StackPanel();
-        advancedTexture.addControl(panel);
-        var header = new BABYLON.GUI.TextBlock();
-        header.text = "Color GUI";
-        header.height = "100px";
-        header.color = "white";
-        header.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-        header.fontSize = "120"
-        panel.addControl(header);
-        var picker = new BABYLON.GUI.ColorPicker();
-        picker.value = new BABYLON.Color3(0,0,1)
-        picker.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-        picker.height = "350px";
-        picker.width = "350px";
-        picker.onValueChangedObservable.add(function(value) {
-            if(lastBox) {
-                lastBox.material.diffuseColor.copyFrom(value);
-                pressed = 11; // kein neue Block
-            }
-        });
-        panel.addControl(picker);
-        // GUI ---
+            var fNEAR = 2; // to show the bike close by
+            var fFAR = 10 * 1000 // to show the far away earth. Default: 10'000
 
 
 
-        // WebXR:
-        const webXRInput = xrHelper.input; // if using the experience helper, otherwise, an instance of WebXRInput
-        webXRInput.onControllerAddedObservable.add((xrController /* WebXRInputSource instance */ ) => {
-            // more fun with the new controller, since we are in XR!
-            console.log("xrController",xrController)
-            xrController.onMotionControllerInitObservable.add((motionController) => {
-                // get the motionController, which is similar to but NOT a gamepad: ???
-                console.log("motionController",motionController)
-                //if(motionController.handness!="right") return;
+            var ix = await scene.createDefaultImmersiveExperienceAsync()
 
-                // get the main component (decided by the controller's vendor!)
-                const mainComponent = xrController.motionController.getMainComponent();
-                console.log("mainComponent",mainComponent)
-                // or get the trigger component, if present:
-                const mainTrigger = xrController.motionController.getComponent(BABYLON.WebXRControllerComponent.TRIGGER);
-                mainComponent.onButtonStateChangedObservable.add((component /* WebXRControllerComponent */ ) => {
-                    // check for changes:
-                    // pressed changed?
-                    if (component.changes.pressed) {
-                        var p0 = pressed;
-                        pressed += component.pressed ? +1 : -1;
-                        console.log(motionController.handness,"component.pressed",component.pressed,pressed)
+            scene.hmd = new HeadMountedDisplay(scene.activeCamera, scene, ix);
+            scene.hmd.out(["TEST START !!"], 5000);
 
-                        if(pressed==2) {
-                            pressed = 12;
-                            scene.meshes.forEach(function(item, index) {
-                                if(item.name.startsWith("box:"))
-                                scene.removeMesh(item);
-                            } );
-                        }
-                        if(pressed==0 && !component.pressed) {
-                            // var position = xrController.grip.position.clone();
-                            blockToggle(scene,xrController.grip.position)
-                        }
+            scene.activeCamera.minZ /= fNEAR
+            scene.activeCamera.maxZ *= fFAR
+
+            var space = new Space(scene);
+            space.ground(100, scene.moveMode == 1, ix);
+            space.skyDome(scene.activeCamera);
 
 
-                        if(pressed==10)
-                            pressed = 0;
+            var material = new BABYLON.StandardMaterial("material", scene);
+            material.diffuseColor = BABYLON.Color3.Yellow(); // nicht specularColor oder emissiveColor!   ambientColor=0 ist unwirksam
+            material.specularColor = specular0; //new BABYLON.Color3(); // Das setzt Babylon automatisch mit diffuseColor ?!? Forum!
+            box = BABYLON.MeshBuilder.CreateBox("box", {
+                size: boxSize,
+                sideOrientation: BABYLON.Mesh.DOUBLESIDE
+            }, scene);
+            box.material = material;
+            box.position.y = boxSize / 2 - 9; // hide
+            box.position.z = 5;
 
 
-                        scene.hmd.out([p0,pressed])
-                    }
-                })
 
+            gostRight = BABYLON.MeshBuilder.CreateBox("gost", {
+                size: boxSize
             });
-        });
+            gostRight.material = material.clone(); // yellow
+            gostRight.material.alpha = 0.2; // .wireframe = true;
+            gostLeft = gostRight.clone();
+
+
+            // GUI +++
+            var plane = BABYLON.Mesh.CreatePlane("plane", 1);
+            plane.position.x = 0.5;
+            plane.position.y = 0.5;
+            plane.position.z = 2.3;
+            plane.parent = scene.activeCamera;
+
+            if (ix) ix.baseExperience.onStateChangedObservable.add(function(state) {
+                plane.position.z = (state==BABYLON.WebXRState.IN_XR) ? 2.6 : 2.3;
+                plane.parent = scene.activeCamera;
+            }.bind(this));
+
+            var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
+            var panel = new BABYLON.GUI.StackPanel();
+            advancedTexture.addControl(panel);
+            var header = new BABYLON.GUI.TextBlock();
+            header.text = "Color GUI";
+            header.height = "100px";
+            header.color = "white";
+            header.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+            header.fontSize = "120"
+            panel.addControl(header);
+            var picker = new BABYLON.GUI.ColorPicker();
+            picker.value = new BABYLON.Color3(0, 0, 1)
+            picker.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+            picker.height = "350px";
+            picker.width = "350px";
+            picker.onValueChangedObservable.add(function(value) {
+                if (lastBox) {
+                    lastBox.material.diffuseColor.copyFrom(value);
+                    pressed = 11; // kein neue Block
+                }
+            });
+            panel.addControl(picker);
+            // GUI ---
+
+
+            // WebXR-Input:
+            const webXRInput = ix.input; // if using the experience helper, otherwise, an instance of WebXRInput
+            webXRInput.onControllerAddedObservable.add((xrController /* WebXRInputSource instance */ ) => {
+                // more fun with the new controller, since we are in XR!
+
+
+                xrController.onMotionControllerInitObservable.add((motionController) => {
+                    // get the motionController, which is similar to but NOT a gamepad: ???
+                    console.log("motionController", motionController.handness, motionController)
+                    console.log("xrController", xrController._uniqueId, xrController)
+                    if (motionController.handness == "right") // gost.position = xrController.grip.position;
+                        xrControllerRight = xrController;
+                    else
+                        xrControllerLeft = xrController;
+
+                    // get the main component (decided by the controller's vendor!)
+                    const mainComponent = xrController.motionController.getMainComponent();
+                    console.log("mainComponent", mainComponent)
+                    // or get the trigger component, if present:
+                    const mainTrigger = xrController.motionController.getComponent(BABYLON.WebXRControllerComponent.TRIGGER);
+                    mainComponent.onButtonStateChangedObservable.add((component /* WebXRControllerComponent */ ) => {
+                        // check for changes:
+                        // pressed changed?
+                        if (component.changes.pressed) {
+                            var p0 = pressed;
+                            pressed += component.pressed ? +1 : -1;
+                            console.log(motionController.handness, "component.pressed", component.pressed, pressed)
+
+                            if (pressed == 2) {
+                                pressed = 12;
+                                scene.meshes.forEach(function(item, index) {
+                                    if (item.name.startsWith("box:"))
+                                        scene.removeMesh(item);
+                                });
+                            }
+                            if (pressed == 0 && !component.pressed) {
+                                // var position = xrController.grip.position.clone();
+                                blockToggle(scene, xrController.grip.position)
+                            }
+
+
+                            if (pressed == 10)
+                                pressed = 0;
+
+
+                            scene.hmd.out([p0, pressed])
+                        }
+                    })
+
+                });
+            });
 
 
 
 
 
-        //// RENDER CYCLE
-        engine.runRenderLoop(function() {
-            var dSec1 = engine._deltaTime / 1000
-            seconds += dSec1;
+            //// RENDER CYCLE
+            engine.runRenderLoop(function() {
+                var dSec1 = engine._deltaTime / 1000
+                seconds += dSec1;
 
-            // Why is dSec so irregular??? It causes optical odds while rotating
-            var fact = 6
-            dSecX = ( dSecX*(fact-1)+dSec1 ) / fact;
+                // Why is dSec so irregular??? It causes optical odds while rotating
+                var fact = 6
+                dSecX = (dSecX * (fact - 1) + dSec1) / fact;
+
+                if (xrControllerRight) {
+                    var position = xrControllerRight.grip.position;
+                    gostRight.position = new BABYLON.Vector3(
+                        (position.x / boxSize + 0.5).toFixed(0) * boxSize - boxSize / 2,
+                        (position.y / boxSize + 0.5).toFixed(0) * boxSize - boxSize / 2,
+                        (position.z / boxSize + 0.5).toFixed(0) * boxSize - boxSize / 2,
+                    )
+                }
+                if (xrControllerLeft) {
+                    var position = xrControllerLeft.grip.position;
+                    gostLeft.position = new BABYLON.Vector3(
+                        (position.x / boxSize + 0.5).toFixed(0) * boxSize - boxSize / 2,
+                        (position.y / boxSize + 0.5).toFixed(0) * boxSize - boxSize / 2,
+                        (position.z / boxSize + 0.5).toFixed(0) * boxSize - boxSize / 2,
+                    )
+                }
+
+                scene.render();
+            });
 
 
-            scene.render();
-        });
+            // the canvas/window resize event handler
+            window.addEventListener('resize', function() {
+                engine.resize();
+            });
 
 
-    });// DOMContentLoaded
-
-
+        }); // DOMContentLoaded
     </script>
 
 </body>
+
 </html>

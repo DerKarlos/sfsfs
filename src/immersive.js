@@ -26,7 +26,7 @@ class DefaultImmersiveExperience {
     }
 
 
-    private async _init() {
+    async _init() { // "private" not on iPhone!
 
         if (this._webxrOk) {
             console.log("+++ WebXR ok, Oculus Quest etc. +++")
