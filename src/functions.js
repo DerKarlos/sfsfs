@@ -36,8 +36,8 @@ export function limit(val, min, max) {
     return val < min ? min : (val > max ? max : val);
 }
 
-export function setCamera(absolutePosition, rotationQuaternion, vrHelper) {
-    var camera = vrHelper.currentVRCamera; // if(vrHelper.isInVRMode)
+export function setCamera(absolutePosition, rotationQuaternion, scene) {
+    var camera = scene.activeCamera; //vrHelper.currentVRCamera; // if(vrHelper.isInVRMode)
     camera.position = absolutePosition;
     if (rotationQuaternion)
         camera.rotationQuaternion = rotationQuaternion;
@@ -74,10 +74,10 @@ export function loadGlb(name, scene, success) {
     BABYLON.Tools.corsbehavior = "anonymous"; // FileTools.CorsBehavior = “credentials”  /  "anonymous"   ??? videoTexture.video.crossOrigin = "anonymous";
     BABYLON.SceneLoader.ImportMesh('', 'ships/', name + '.glb', scene, // wheelchair aufgabe_orion radiatoren
         /* onSuccess: */
-        function(meshes, particleSystems, skeletons) {
+        (meshes, particleSystems, skeletons) => {
             // how do avoid to see the array for a moment???  It should also be noted that a mesh with a layerMask of 0, can never be seen by anyone. This might be good for hiding things.
             console.log("loaded: " + name);
-            var glb = new BABYLON.TransformNode("TransformNode_"+name, scene); // Mesh
+            var glb = new BABYLON.TransformNode("TransformNode_" + name, scene); // Mesh
 
             meshes.forEach((mesh, i) => {
                 if (mesh.parent == undefined) {
@@ -87,7 +87,7 @@ export function loadGlb(name, scene, success) {
 
             if (success)
                 success(glb);
-        }.bind(this),
+        },
         /* onProgress: */
         function(event) {
             //console.log(name + " loaded: ", Math.floor(event.loaded / event.total * 100) + "%")

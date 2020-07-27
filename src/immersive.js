@@ -58,18 +58,18 @@ class DefaultImmersiveExperience {
             this.baseExperience.onStateChangedObservable = {};
             this._stateChangedCallbacks = [];
 
-            this.teleportation.addFloorMesh = function(groundMesh) {
+            this.teleportation.addFloorMesh = (groundMesh) => {
                 console.log(this)
                 this._vrHelper.enableTeleportation({
                         floorMeshName: groundMesh.name
                     } // only one?! Will it work on Cardboard? Hardly
                 );
-            }.bind(this); // TODO: find something better then bind
+            };
 
             // set state change callback
-            this.baseExperience.onStateChangedObservable.add = function(stateChangedCallback) {
+            this.baseExperience.onStateChangedObservable.add = (stateChangedCallback) => {
                 this._stateChangedCallbacks.push(stateChangedCallback);
-            }.bind(this);
+            };
 
             // if entering VR: call back IN
             this._vrHelper.onEnteringVRObservable.add(() => {

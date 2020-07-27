@@ -61,10 +61,10 @@ export class User { // derivated from "bike"
     }
 
     // move is part of the controls but is done direct by the user mash
-    animate(dSec,xrHelper){
+    animate(dSec,vrHelper){
 
         if( this.control ) {
-            this.control.animate(dSec,xrHelper);
+            this.control.animate(dSec,vrHelper);
         }
 
         var limit = 5000.0;
@@ -85,7 +85,7 @@ export class User { // derivated from "bike"
         // NO!:  https://doc.babylonjs.com/resources/rotation_conventions#euler-angles-to-quaternions
         // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
 
-        var cameraOffset = xrHelper.isInVRMode ? this.cameraOffset1 : this.cameraOffset3;
+        var cameraOffset = vrHelper.isInVRMode ? this.cameraOffset1 : this.cameraOffset3;
 
         var camPos = new BABYLON.AbstractMesh("camPos");
         camPos.rotationQuaternion = this.root.rotationQuaternion;
@@ -93,7 +93,7 @@ export class User { // derivated from "bike"
         camPos.locallyTranslate(cameraOffset);
         setCamera(  camPos.position,
                     camPos.rotationQuaternion,
-                    this.scene );
+                    vrHelper );
 
     }
 

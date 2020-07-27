@@ -34,7 +34,15 @@
     <script type='module'>
         'use strict';
 
+
+        //// Imports //////////////////////////////////
         import {} from './src/immersive.js';
+        import {
+            updater
+        } from './src/utils.js';
+        import {
+            Xwing
+        } from './ships/xwing.js';
         import {
             OrionIX
         } from './ships/orionix.js';
@@ -46,8 +54,14 @@
             grad,
             getUrlParameter,
             loadGlb,
-            limit
+            limit,
+            setCamera
         } from './src/functions.js';
+        import {
+            Control
+        } from './src/control.js';
+
+
 
         /**/ // To see errors on touch devices
         window.onerror = function(msg, url, line) {
@@ -56,18 +70,21 @@
         }
         /**/
 
+
+
         window.addEventListener('DOMContentLoaded', async function() {
 
             var canvas = document.getElementById('renderCanvas');
             var engine = new BABYLON.Engine(canvas, true);
 
+            var ship = undefined;
             var orion = undefined;
-            var richtung = 1;
+            var schachtOut = false;
 
             function upDown() {
-                setTimeout(upDown,20000);
-                richtung *= -1;
-                orion.SchachtSpeed(richtung*0.1)
+                setTimeout(upDown, 20000);
+                schachtOut = !schachtOut;
+                orion.schachtOut(schachtOut);
             }
 
 
@@ -98,16 +115,29 @@
                 space.skyDome(scene.activeCamera);
 
 
-                orion = new OrionIX(new BABYLON.Vector3(-20, 0, 0), null, null, null, scene, function(model, orion) {
+                var xwing = new Xwing(new BABYLON.Vector3(0, 4, 0), true, null, null, null, scene, function(model, xwing) {
+                    model.rotation.y = rad(180)
+                    setTimeout(() => {
+                        xwing.spread(false);
+                    }, 5000);
+                });
 
-                    var m50 = new OrionIX(new BABYLON.Vector3(+30, 0, 0), null, null, null, scene)
-                    var scale = 0.3333; // 150m => 50m
-                    m50.model.scaling = new BABYLON.Vector3(scale, scale, scale);
 
-                    var m1x = new OrionIX(new BABYLON.Vector3(0, 1, -30), null, null, null, scene)
+                ship = new Xwing(new BABYLON.Vector3(0, 0, 0), false, null, null, null, scene, function(model, xwing) {
+                    model.rotation.y = rad(90)
+                });
+
+                /**/
+                orion = new OrionIX(new BABYLON.Vector3(-20, 0, 0), false, null, null, null, scene, function(model, orion) {
+
+                    //  var m50 = new OrionIX(new BABYLON.Vector3(+30, 0, 0), false, null, null, null, scene)
+                    //  var scale = 0.3333; // 150m => 50m
+                    //  m50.model.scaling = new BABYLON.Vector3(scale, scale, scale);
+
+                    var m1x = new OrionIX(new BABYLON.Vector3(0, 1, -30), true, null, null, null, scene)
                     var scale = 0.01; // 150m => 1.5m
                     m1x.model.scaling = new BABYLON.Vector3(scale, scale, scale);
-//                  m1x.Schacht(1); // Lift ausfahren
+                    //                  m1x.Schacht(1); // Lift ausfahren
 
                     var dicke = 0.04;
                     var material = new BABYLON.StandardMaterial("material", scene);
@@ -120,8 +150,9 @@
                     tisch.position.z = -30;
                     tisch.material = material
 
-                    upDown();
+                    setTimeout(upDown, 20000);
                 })
+                /**/
 
 
                 // return the created scene
@@ -130,6 +161,15 @@
 
             // call the createScene function
             var scene = await createScene();
+
+            scene.activeCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
+            scene.activeCamera.inputs.attached.mousewheel.detachControl(); //???
+            scene.activeCamera.inputs.attached.pointers.detachControl(); //???
+
+
+            //user.control =
+    //        new Control(ship, scene, engine, ix);
+
 
             // run the render loop
             var seconds = 0;
@@ -143,9 +183,21 @@
                 var fact = 6
                 dSecX = (dSecX * (fact - 1) + dSec1) / fact;
 
+                //ship.model.rotation = scene.activeCamera.rotation;
+                //ship.model.position = scene.activeCamera.position;
 
-                orion.Update(dSecX)
+
+                var p = scene.activeCamera.position.clone();
+                var t = p.y;
+                var a = 1*dSecX;
+                p.y += a;
+                console.log(p.y,t)
+
+
+                updater.update(dSecX);
                 scene.render();
+                setCamera(p,null,scene);
+
             });
 
             // the canvas/window resize event handler

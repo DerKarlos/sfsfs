@@ -1,13 +1,27 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8" />
     <title>Space Sim</title>
     <style>
-    html, body { overflow:   hidden;    width: 100%;    height: 100%;     margin: 0;    padding: 0;    }
-    #viewer    { touch-action: none;    width: 100%;    height: 100%;                            }
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #viewer {
+            touch-action: none;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
+
 <body>
 
     <canvas id='viewer' />
@@ -17,710 +31,793 @@
     <script src="https://cdn.babylonjs.com/babylonjs.loaders.min.js"> </script>
     -->
     <script type='module'>
+        import {
+            HeadMountedDisplay
+        } from './src/hmd.js';
 
-    import { HeadMountedDisplay  } from './hmd.js';
-
-    /**/
-    // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
-    window.onerror = function(msg,url,line){
-        alert(msg+'\n'+url+'\nLine: '+line)
-        return true
-    }
-    /**/
-
-
-
-    /*
-        https://www.babylonjs-playground.com/#PYTAP9#2
-    */
-
-    function rad(degrees)    { return degrees * (Math.PI/180); }
-    function grad(rad)       { return rad     / (Math.PI/180); }
-
-    function setDeadZone(value) {
-        const DEADZONE = 0.2;
-
-        // If stick value is smaller than dead zone, give it a value of 0
-        // Math.abs() makes it work regardless of positive or negative value
-        if (Math.abs(value) < DEADZONE) {
-
-            return value = 0;
-
-        } else {
-            // We are outside the dead zone: substract deadzoone
-            value = value - Math.sign(value) * DEADZONE;
-
-            // Normalize the values between 0 and 1
-            value /= (1.0 - DEADZONE);
-
-            return value;
-
+        /**/
+        // To see errors on touch devices, activate this Errorhandler producing Galert dialogs
+        window.onerror = function(msg, url, line) {
+            alert(msg + '\n' + url + '\nLine: ' + line)
+            return true
         }
-    }
+        /**/
 
 
-    function loadGlb(name,scene,success) {
 
-        BABYLON.Tools.corsbehavior = "anonymous";   // FileTools.CorsBehavior = “credentials”  /  "anonymous"   ??? videoTexture.video.crossOrigin = "anonymous";
-        BABYLON.SceneLoader.ImportMesh('', 'ships/', name+'.glb', scene, // wheelchair aufgabe_orion radiatoren
-            /* onSuccess: */ function (newMeshes) {
-                // how do avoid to see the array for a moment???  It should also be noted that a mesh with a layerMask of 0, can never be seen by anyone. This might be good for hiding things.
-                console.log("loaded: "+name);
-                var glb = new BABYLON.Mesh(name, scene);
-                for(var index in newMeshes) {
-                    var mesh = newMeshes[index]; //console.log("o." + index + " = " + mesh);
-                    glb.addChild(mesh);
+        /*
+            https://www.babylonjs-playground.com/#PYTAP9#2
+        */
+
+        function rad(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        function grad(rad) {
+            return rad / (Math.PI / 180);
+        }
+
+        function setDeadZone(value) {
+            const DEADZONE = 0.2;
+
+            // If stick value is smaller than dead zone, give it a value of 0
+            // Math.abs() makes it work regardless of positive or negative value
+            if (Math.abs(value) < DEADZONE) {
+
+                return value = 0;
+
+            } else {
+                // We are outside the dead zone: substract deadzoone
+                value = value - Math.sign(value) * DEADZONE;
+
+                // Normalize the values between 0 and 1
+                value /= (1.0 - DEADZONE);
+
+                return value;
+
+            }
+        }
+
+
+        function loadGlb(name, scene, success) {
+
+            BABYLON.Tools.corsbehavior = "anonymous"; // FileTools.CorsBehavior = “credentials”  /  "anonymous"   ??? videoTexture.video.crossOrigin = "anonymous";
+            BABYLON.SceneLoader.ImportMesh('', 'ships/', name + '.glb', scene, // wheelchair aufgabe_orion radiatoren
+                /* onSuccess: */
+                (newMeshes) => {
+                    // how do avoid to see the array for a moment???  It should also be noted that a mesh with a layerMask of 0, can never be seen by anyone. This might be good for hiding things.
+                    console.log("loaded: " + name);
+                    var glb = new BABYLON.Mesh(name, scene);
+                    for (var index in newMeshes) {
+                        var mesh = newMeshes[index]; //console.log("o." + index + " = " + mesh);
+                        glb.addChild(mesh);
+                    }
+                    if (success)
+                        success(glb);
+                },
+                /* onProgress: */
+                function(event) {
+                    console.log("model loaded: ", Math.floor(event.loaded / event.total * 100) + "%")
+                },
+                /* onError:    */
+                function(event) {
+                    console.log("onError:" + name, event)
                 }
-                if(success)
-                    success(glb);
-            }.bind(this),
-            /* onProgress: */ function (event) {   console.log("model loaded: ", Math.floor(event.loaded/event.total*100)+"%") },
-            /* onError:    */ function (event) {   console.log("onError:"+name,event) }
-        );//ImportMesh
+            ); //ImportMesh
 
-    }
+        }
 
-    class Ramp { ////////////////////////////////////////////////// Ramp (helper CLASS) ////////////////////////////////////////////
+        class Ramp { ////////////////////////////////////////////////// Ramp (helper CLASS) ////////////////////////////////////////////
 
-        constructor(up,down,initValue) {
-            if(!up)   up   = 1;
-            if(!down) down = up;
-            if(!initValue) initValue = 0;
-            this.up     = up;
-            this.down   = down;
-            this.actual = initValue;
+            constructor(up, down, initValue) {
+                if (!up) up = 1;
+                if (!down) down = up;
+                if (!initValue) initValue = 0;
+                this.up = up;
+                this.down = down;
+                this.actual = initValue;
+            }
+
+
+            reset() {
+                this.actual = 0
+            }
+
+
+            ramping(set, dt) {
+
+                var delta = set - this.actual;
+                var abs = Math.abs(delta);
+                var sign = Math.sign(delta);
+                var ramp = (sign == Math.sign(this.actual)) ? this.up : this.down;
+                if (abs > ramp * dt)
+                    abs = ramp * dt;
+                delta = abs * sign;
+
+                this.actual += delta;
+                return this.actual;
+            }
+
+
+        } //class ramp
+
+
+        class Ramp3 {
+            constructor() {
+                this.x = new Ramp();
+                this.y = new Ramp();
+                this.z = new Ramp();
+                this.actual = new BABYLON.Vector3();
+            }
+
+            ramping(x, y, z, dt) {
+                this.actual.x = this.x.ramping(x, dt);
+                this.actual.y = this.y.ramping(y, dt);
+                this.actual.z = this.z.ramping(z, dt);
+                return this.actual;
+            }
+
+            reset() {
+                this.x.reset();
+                this.y.reset();
+                this.z.reset();
+            }
+
         }
 
 
-        reset() {
-            this.actual = 0
-        }
+        class Control {
 
+            constructor(engine, vrHelper) {
 
-        ramping(set,dt) {
+                this.keyLeftRight = 0;
+                this.keyUpDown = 0;
+                this.keyUeAe = 0;
+                this.keyPagePS = 0; // Page Up/Down = Plus/Sharpe-Keys
+                this.keyMPoint = 0; //                Minus/Point-Keys
+                this.joystick = new BABYLON.Vector3();
 
-            var delta = set-this.actual;
-            var abs   = Math.abs( delta);
-            var sign  = Math.sign(delta);
-            var ramp  = (sign==Math.sign(this.actual)) ? this.up : this.down;
-            if( abs   > ramp*dt)
-                abs   = ramp*dt;
-            delta     = abs * sign;
+                this.rampPosition = new Ramp3();
+                this.rampRotation = new Ramp3();
 
-            this.actual += delta;
-            return this.actual;
-        }
+                this.rotationRelativMesh = new BABYLON.Mesh("", this.scene); // reused in each cycle to calc rotation
 
-
-    }//class ramp
-
-
-    class Ramp3 {
-        constructor() {
-            this.x = new Ramp();
-            this.y = new Ramp();
-            this.z = new Ramp();
-            this.actual = new BABYLON.Vector3();
-        }
-
-        ramping(x,y,z,dt) {
-            this.actual.x = this.x.ramping(x, dt);
-            this.actual.y = this.y.ramping(y, dt);
-            this.actual.z = this.z.ramping(z, dt);
-            return this.actual;
-        }
-
-        reset() {
-            this.x.reset();
-            this.y.reset();
-            this.z.reset();
-        }
-
-    }
-
-
-    class Control {
-
-        constructor(engine, vrHelper){
-
-            this.keyLeftRight  = 0;
-            this.keyUpDown     = 0;
-            this.keyUeAe       = 0;
-            this.keyPagePS     = 0; // Page Up/Down = Plus/Sharpe-Keys
-            this.keyMPoint     = 0; //                Minus/Point-Keys
-            this.joystick      = new BABYLON.Vector3();
-
-            this.rampPosition  = new Ramp3();
-            this.rampRotation  = new Ramp3();
-
-            this.cameraRotationStartY = 0;
-
-            this.rotationRelativMesh = new BABYLON.Mesh("",this.scene);
-
-            document.addEventListener("keydown", this.onKeyDown.bind(this), false);
-            document.addEventListener("keyup",   this.onKeyUp.bind(this),   false);
-            window.addEventListener(  "resize",  function(){ engine.resize(); }  );
-
-
-            //// Oclus controls      https://playground.babylonjs.com/#0IBX3Y#1
-            vrHelper.onControllerMeshLoaded.add((webVRController)=>{
-
-                control.joystick.x = 0.1;
-                // buttons
-                webVRController.onBButtonStateChangedObservable.add((stateObject)=>{
-                    // if(webVRController.hand ==='right') -- enable both controller       Y <=> B
-
-                    this.resetPositionAndRotation();
+                document.addEventListener("keydown", this.onKeyDown.bind(this), false);
+                document.addEventListener("keyup", (evt) => { // no bind but looks "to much" TODO: Better way?
+                    this.onKeyUp(evt);
+                }, false);
+                window.addEventListener("resize", function() {
+                    engine.resize();
                 });
 
-                webVRController.onAButtonStateChangedObservable.add((stateObject)=>{ //    X <=> A
+
+                //// Oclus controls      https://playground.babylonjs.com/#0IBX3Y#1
+                vrHelper.onControllerMeshLoaded.add((webVRController) => {
+
+                    control.joystick.x = 0.1;
+                    // buttons
+                    webVRController.onBButtonStateChangedObservable.add((stateObject) => {
+                        // if(webVRController.hand ==='right') -- enable both controller       Y <=> B
+
+                        this.resetPositionAndRotation();
+                    });
+
+                    webVRController.onAButtonStateChangedObservable.add((stateObject) => { //    X <=> A
 
 
-                    if(stateObject.pressed === true){
+                        if (stateObject.pressed === true) {
+                            this.stop = true;
+                        } else {
+                            this.stop = false;
+                        }
+
+
+                    });
+
+                    webVRController.onPadStateChangedObservable.add((stateObject) => {
+                        //???
+                    });
+
+                    webVRController.onTriggerStateChangedObservable.add((stateObject) => {
+                        this.joystick.z = stateObject.value;
+                    });
+
+                    webVRController.onSecondaryTriggerStateChangedObservable.add((stateObject) => {
+                        this.joystick.z = -stateObject.value;
+                    });
+
+                    // joystick:
+                    webVRController.onPadValuesChangedObservable.add((stateObject) => {
+                        // if(webVRController.hand ==='right') -- enable both controller
+                        {
+                            control.joystick.x = stateObject.x;
+                            control.joystick.y = stateObject.y;
+                        }
+                    }); // onPadValuesChangedObservable
+
+                }); // onControllerMeshLoaded
+
+
+            } // constructor
+
+
+            resetPositionAndRotation() {
+                this.rampPosition.reset();
+                this.rampRotation.reset();
+                bike.resetPositionAndRotation();
+            }
+
+
+            onKeyDown(evt) {
+                switch (evt.keyCode) {
+                    case 13:
+                        this.resetPositionAndRotation();
+                        break; // return
+                    case 32:
                         this.stop = true;
-                    } else {
+                        break; // space
+                    case 39:
+                        this.keyLeftRight = +1;
+                        break; // right
+                    case 37:
+                        this.keyLeftRight = -1;
+                        break; // left
+                    case 38:
+                        this.keyUpDown = +1;
+                        break; // up
+                    case 40:
+                        this.keyUpDown = -1;
+                        break; // down
+                    case 163:
+                        this.keyPagePS = +1;
+                        break; // +
+                    case 171:
+                        this.keyPagePS = -1;
+                        break; // #
+                    case 173:
+                        this.keyMPoint = +1;
+                        break; // -
+                    case 190:
+                        this.keyMPoint = -1;
+                        break; // .
+
+                    case 222:
+                        this.keyUeAe = +1;
+                        break; // ü
+                    case 219:
+                        this.keyUeAe = -1;
+                        break; // ä
+
+                    default:
+                        console.log("KEY: " + evt.keyCode);
+                }
+            }
+
+            onKeyUp(evt) {
+                switch (evt.keyCode) {
+                    case 32:
                         this.stop = false;
-                    }
-
-
-                });
-
-                webVRController.onPadStateChangedObservable.add((stateObject)=>{
-                    //???
-                });
-
-                webVRController.onTriggerStateChangedObservable.add((stateObject)=>{
-                    this.joystick.z = stateObject.value;
-                });
-
-                webVRController.onSecondaryTriggerStateChangedObservable.add((stateObject)=>{
-                    this.joystick.z = -stateObject.value;
-                });
-
-                // joystick:
-                webVRController.onPadValuesChangedObservable.add((stateObject)=>{
-                    // if(webVRController.hand ==='right') -- enable both controller
-                    {
-                        control.joystick.x = stateObject.x;
-                        control.joystick.y = stateObject.y;
-                    }
-                }); // onPadValuesChangedObservable
-
-            });     // onControllerMeshLoaded
-
-
-        }// constructor
-
-
-        resetPositionAndRotation() {
-            this.rampPosition.reset();
-            this.rampRotation.reset();
-            bike.resetPositionAndRotation();
-        }
-
-
-        onKeyDown(evt) {
-            switch (evt.keyCode) {
-                case  13: this.resetPositionAndRotation(); break; // return
-                case  32: this.stop = true;                break; // space
-                case  39: this.keyLeftRight = +1;          break; // right
-                case  37: this.keyLeftRight = -1;          break; // left
-                case  38: this.keyUpDown    = +1;          break; // up
-                case  40: this.keyUpDown    = -1;          break; // down
-                case 163: this.keyPagePS    = +1;          break; // +
-                case 171: this.keyPagePS    = -1;          break; // #
-                case 173: this.keyMPoint    = +1;          break; // -
-                case 190: this.keyMPoint    = -1;          break; // .
-
-                case 222: this.keyUeAe      = +1;          break; // ü
-                case 219: this.keyUeAe      = -1;          break; // ä
-
-                default: console.log("KEY: "+evt.keyCode);
+                        break;
+                    case 39:
+                    case 37:
+                        this.keyLeftRight = 0;
+                        break;
+                    case 38:
+                    case 40:
+                        this.keyUpDown = 0;
+                        break;
+                    case 163:
+                    case 171:
+                        this.keyPagePS = 0;
+                        break;
+                    case 173:
+                    case 190:
+                        this.keyMPoint = 0;
+                        break;
+                    case 222:
+                    case 219:
+                        this.keyUeAe = 0;
+                        break;
+                }
             }
-        }
 
-        onKeyUp(evt) {
-            switch (evt.keyCode) {
-                case  32:           this.stop = false;      break;
-                case  39: case  37: this.keyLeftRight =  0; break;
-                case  38: case  40: this.keyUpDown    =  0; break;
-                case 163: case 171: this.keyPagePS    =  0; break;
-                case 173: case 190: this.keyMPoint    =  0; break;
-                case 222: case 219: this.keyUeAe      =  0; break;
-            }
-        }
-
-        animate(dSec) { // Control
+            animate(dSec) { // Control
 
 
 
-            this.rotationRelativMesh.rotationQuaternion = vrHelper.webVRCamera.deviceRotationQuaternion.clone();
+                this.rotationRelativMesh.rotationQuaternion = vrHelper.webVRCamera.deviceRotationQuaternion.clone();
 
-            var  rotationDevice = vrHelper.webVRCamera.deviceRotationQuaternion.toEulerAngles();
-            var  rotationCamera = vrHelper.webVRCamera.      rotationQuaternion.toEulerAngles();
+                var rotationDevice = vrHelper.webVRCamera.deviceRotationQuaternion.toEulerAngles();
+                var rotationCamera = vrHelper.webVRCamera.rotationQuaternion.toEulerAngles();
 
-            this.rotationRelativMesh.rotate(BABYLON.Axis.Y, -rotationCamera.y, BABYLON.Space.LOCAL);
-            this.rotationRelativMesh.rotate(BABYLON.Axis.X, -rotationCamera.x, BABYLON.Space.LOCAL);
-            this.rotationRelativMesh.rotate(BABYLON.Axis.Z, -rotationCamera.z, BABYLON.Space.LOCAL);
+                this.rotationRelativMesh.rotate(BABYLON.Axis.Y, -rotationCamera.y, BABYLON.Space.LOCAL);
+                this.rotationRelativMesh.rotate(BABYLON.Axis.X, -rotationCamera.x, BABYLON.Space.LOCAL);
+                this.rotationRelativMesh.rotate(BABYLON.Axis.Z, -rotationCamera.z, BABYLON.Space.LOCAL);
 
-            var  rotationRelativ = this.rotationRelativMesh.rotationQuaternion.toEulerAngles();
-            var  x = //+rotationRelativ.x * Math.cos(rotationDevice.y)/1
-                     -rotationRelativ.z * Math.sin(rotationDevice.y)/1;
-            var  y = +rotationRelativ.y;
-            var  z = +0;
+                var rotationRelativ = this.rotationRelativMesh.rotationQuaternion.toEulerAngles();
+                var x = //+rotationRelativ.x * Math.cos(rotationDevice.y)/1
+                    -rotationRelativ.z * Math.sin(rotationDevice.y) / 1;
+                var y = +rotationRelativ.y;
+                var z = +0;
 
 
-            if(hmd)
-            hmd.out([
-                        "Dev: "+Math.floor( grad(rotationDevice .x) )
-                           +" "+Math.floor( grad(rotationDevice .y) )
-                           +" "+Math.floor( grad(rotationDevice .z) ),
+                if (hmd)
+                    hmd.out([
+                        "Dev: " + Math.floor(grad(rotationDevice.x)) +
+                        " " + Math.floor(grad(rotationDevice.y)) +
+                        " " + Math.floor(grad(rotationDevice.z)),
 
-                        "Bik: "+Math.floor( grad(rotationCamera .x) )
-                           +" "+Math.floor( grad(rotationCamera .y) )
-                           +" "+Math.floor( grad(rotationCamera .z) ),
+                        "Bik: " + Math.floor(grad(rotationCamera.x)) +
+                        " " + Math.floor(grad(rotationCamera.y)) +
+                        " " + Math.floor(grad(rotationCamera.z)),
 
-                        "Rel: "+Math.floor( grad(rotationRelativ.x) )
-                           +" "+Math.floor( grad(rotationRelativ.y) )
-                           +" "+Math.floor( grad(rotationRelativ.z) ),
+                        "Rel: " + Math.floor(grad(rotationRelativ.x)) +
+                        " " + Math.floor(grad(rotationRelativ.y)) +
+                        " " + Math.floor(grad(rotationRelativ.z)),
 
-                        "xyz: "+Math.floor( grad(                x) )
-                           +" "+Math.floor( grad(                y) )
-                           +" "+Math.floor( grad(                z) ),
+                        "xyz: " + Math.floor(grad(x)) +
+                        " " + Math.floor(grad(y)) +
+                        " " + Math.floor(grad(z)),
 
-                        "dSc: "+Math.floor(dSec*1000),
+                        "dSc: " + Math.floor(dSec * 1000),
                     ]);
 
 
 
-            var accelInputX  = setDeadZone(this.joystick.x) * +1; // +/- 0.2 to 1.0  becomes  0.0 to 1.0
-            var accelInputY  = setDeadZone(this.joystick.y) * -1;
-            var accelInputZ  = setDeadZone(this.joystick.z) * +1;
+                var accelInputX = setDeadZone(this.joystick.x) * +1; // +/- 0.2 to 1.0  becomes  0.0 to 1.0
+                var accelInputY = setDeadZone(this.joystick.y) * -1;
+                var accelInputZ = setDeadZone(this.joystick.z) * +1;
 
-            if( this.stop )
-                this.stop = bike.stop(dSec);
-
-
-            var accelerationPosition = this.rampPosition.ramping(
-                +0             +0,                 // shift
-                +accelInputZ   +this.keyPagePS,    // rise
-                +accelInputY   +this.keyUpDown,    // speed
-                dSec);
+                if (this.stop)
+                    this.stop = bike.stop(dSec);
 
 
-
-            var accelerationRotation = this.rampRotation.ramping(
-            /*x*/    -0/*elInputZ*/ +this.keyUeAe,        // v^   roll  z  ///  -accelInputZ+this.keyPagePS,
-              y      +accelInputX   +this.keyLeftRight,   // <>   pitch x  ///  +setDeadZone(y)*4
-            /*z*/    +0             +this.keyMPoint,      // ()   yaw   y
-                dSec);
+                var accelerationPosition = this.rampPosition.ramping(
+                    +0 + 0, // shift
+                    +accelInputZ + this.keyPagePS, // rise
+                    +accelInputY + this.keyUpDown, // speed
+                    dSec);
 
 
 
-
-            accelerationPosition = accelerationPosition.multiplyByFloats(1,25,50); // relative to ship
-
-
-            switch("fake") {
-
-
-                case "fake":
-                bike.setSpeed(        accelerationPosition.scaleInPlace(1.0),
-                                      accelerationRotation.scaleInPlace(1.0)  );
-                break;
+                var accelerationRotation = this.rampRotation.ramping(
+                    /*x*/
+                    -0 /*elInputZ*/ + this.keyUeAe, // v^   roll  z  ///  -accelInputZ+this.keyPagePS,
+                    y + accelInputX + this.keyLeftRight, // <>   pitch x  ///  +setDeadZone(y)*4
+                    /*z*/
+                    +0 + this.keyMPoint, // ()   yaw   y
+                    dSec);
 
 
-                case "mix":
-                bike.setAcceleratoin( accelerationPosition.scaleInPlace(0.1), 0 );
-                bike.setSpeed( 0,     accelerationRotation.scaleInPlace(1.0)    );
-                break;
 
 
-                case "real":
-                bike.setAcceleratoin( accelerationPosition.scaleInPlace(0.01),
-                                      accelerationRotation.scaleInPlace(0.01)  );
-                var limit = 0.1;
-                var min = new BABYLON.Vector3(-limit,-limit,-limit);
-                var max = new BABYLON.Vector3(+limit,+limit,+limit);
-                bike.speedRotation = BABYLON.Vector3.Clamp(bike.speedRotation,min,max);
-                break;
+                accelerationPosition = accelerationPosition.multiplyByFloats(1, 25, 50); // relative to ship
 
+
+                switch ("fake") {
+
+
+                    case "fake":
+                        bike.setSpeed(accelerationPosition.scaleInPlace(1.0),
+                            accelerationRotation.scaleInPlace(1.0));
+                        break;
+
+
+                    case "mix":
+                        bike.setAcceleratoin(accelerationPosition.scaleInPlace(0.1), 0);
+                        bike.setSpeed(0, accelerationRotation.scaleInPlace(1.0));
+                        break;
+
+
+                    case "real":
+                        bike.setAcceleratoin(accelerationPosition.scaleInPlace(0.01),
+                            accelerationRotation.scaleInPlace(0.01));
+                        var limit = 0.1;
+                        var min = new BABYLON.Vector3(-limit, -limit, -limit);
+                        var max = new BABYLON.Vector3(+limit, +limit, +limit);
+                        bike.speedRotation = BABYLON.Vector3.Clamp(bike.speedRotation, min, max);
+                        break;
+
+
+                }
 
             }
 
         }
 
-    }
+        class Bike {
 
-    class Bike {
+            constructor(scene) {
 
-        constructor(scene) {
+                //// Space Bike (root, body and camera position)
+                this.root = new BABYLON.TransformNode("root", scene);
+                this.resetPositionAndRotation();
+                /**************** /
 
-            //// Space Bike (root, body and camera position)
-            this.root = new BABYLON.TransformNode("root", scene);
-            this.resetPositionAndRotation();
-            /**************** /
+                var body = BABYLON.MeshBuilder.CreateCylinder("body", {height: 3, diameterTop: 0.2, diameterBottom: 1, tessellation: 16}, scene);
+                body.rotation.x = rad(90);
+                body.parent     = this.root;
+                body.position.z = +0.5;
 
-            var body = BABYLON.MeshBuilder.CreateCylinder("body", {height: 3, diameterTop: 0.2, diameterBottom: 1, tessellation: 16}, scene);
-            body.rotation.x = rad(90);
-            body.parent     = this.root;
-            body.position.z = +0.5;
+                var handle = BABYLON.MeshBuilder.CreateCylinder("handle", {height: 1, diameterTop: 0.025, diameterBottom: 0.025, tessellation: 16}, scene);
+                handle.rotation.z = rad(90);
+                handle.parent     = this.root;
+                handle.position.y = +0.6;
+                handle.position.z = +0.4;
+                /****************/
 
-            var handle = BABYLON.MeshBuilder.CreateCylinder("handle", {height: 1, diameterTop: 0.025, diameterBottom: 0.025, tessellation: 16}, scene);
-            handle.rotation.z = rad(90);
-            handle.parent     = this.root;
-            handle.position.y = +0.6;
-            handle.position.z = +0.4;
-            /****************/
-
-            this.cameraOffset1 = new BABYLON.Vector3( 0, 1.6, 0);  // 0.8 für bike
-            this.cameraOffset3 = new BABYLON.Vector3( 5, 8, -30);  // 0.8 für 3rd person view
-            this.speedPosition = new BABYLON.Vector3();
-            this.speedRotation = new BABYLON.Vector3();
-            this.speedRotWorld = new BABYLON.Vector3();
+                this.cameraOffset1 = new BABYLON.Vector3(0, 1.6, 0); // 0.8 für bike
+                this.cameraOffset3 = new BABYLON.Vector3(5, 8, -30); // 0.8 für 3rd person view
+                this.speedPosition = new BABYLON.Vector3();
+                this.speedRotation = new BABYLON.Vector3();
+                this.speedRotWorld = new BABYLON.Vector3();
 
 
 
-        }
+            }
 
-        setSpeed(position,rotation) {
-            if(position) this.speedPosition.copyFrom(position);
-            if(rotation) this.speedRotation.copyFrom(rotation);
-        }
-
-
-        setAcceleratoin(position,rotation) {
-            if(position) this.speedPosition.addInPlace(position);
-            if(rotation) this.speedRotation.addInPlace(rotation);
-        }
+            setSpeed(position, rotation) {
+                if (position) this.speedPosition.copyFrom(position);
+                if (rotation) this.speedRotation.copyFrom(rotation);
+            }
 
 
-        stop(dSec) {
-            var factor = 1 - dSec*1;
-            this.speedPosition.scaleInPlace(factor);
-            this.speedRotation.scaleInPlace(factor);
+            setAcceleratoin(position, rotation) {
+                if (position) this.speedPosition.addInPlace(position);
+                if (rotation) this.speedRotation.addInPlace(rotation);
+            }
 
-            if(this.speedPosition.length + this.speedRotation.length < 0.01) {
+
+            stop(dSec) {
+                var factor = 1 - dSec * 1;
+                this.speedPosition.scaleInPlace(factor);
+                this.speedRotation.scaleInPlace(factor);
+
+                if (this.speedPosition.length + this.speedRotation.length < 0.01) {
+                    this.speedPosition = BABYLON.Vector3.Zero();
+                    this.speedRotation = BABYLON.Vector3.Zero();
+                    return false;
+                } else return true;
+            }
+
+
+            resetPositionAndRotation() {
                 this.speedPosition = BABYLON.Vector3.Zero();
                 this.speedRotation = BABYLON.Vector3.Zero();
-                return false;
+                this.root.position = BABYLON.Vector3.Zero()
+                this.root.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, 0.00001 /*Why is 0 so od in Babslon???*/ , 0);
             }
-            else return true;
-        }
+
+            // move is part of the controls but is done direct by the bike mash
+            animate(dSec) {
 
 
-        resetPositionAndRotation() {
-            this.speedPosition = BABYLON.Vector3.Zero();
-            this.speedRotation = BABYLON.Vector3.Zero();
-            this.root.position           = BABYLON.Vector3.Zero()
-            this.root.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, 0.00001/*Why is 0 so od in Babslon???*/, 0);
-        }
+                this.root.locallyTranslate(this.speedPosition.scale(dSec)); // relatige to ship  OR:   this.root.translate(this.speedPosition, 1 , Space.LOCAL);     // relatige to ship
+                //???       this.root.rotate(this.speedRotation, dSec, BABYLON.Space.LOCAL);    // ??? Does strange things like slimming the ship
 
-        // move is part of the controls but is done direct by the bike mash
-        animate(dSec){
+                this.root.rotate(BABYLON.Axis.Y, this.speedRotation.y * dSec, BABYLON.Space.LOCAL);
+                this.root.rotate(BABYLON.Axis.X, this.speedRotation.x * dSec, BABYLON.Space.LOCAL); // not .WORLD
+                this.root.rotate(BABYLON.Axis.Z, this.speedRotation.z * dSec, BABYLON.Space.LOCAL);
 
+                // NO!:  https://doc.babylonjs.com/resources/rotation_conventions#euler-angles-to-quaternions
+                // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
 
-            this.root.locallyTranslate(this.speedPosition.scale(dSec));         // relatige to ship  OR:   this.root.translate(this.speedPosition, 1 , Space.LOCAL);     // relatige to ship
-            //???       this.root.rotate(this.speedRotation, dSec, BABYLON.Space.LOCAL);    // ??? Does strange things like slimming the ship
+                var cameraOffset = vrHelper.isInVRMode ? this.cameraOffset1 : this.cameraOffset3;
 
-            this.root.rotate(BABYLON.Axis.Y, this.speedRotation.y*dSec, BABYLON.Space.LOCAL);
-            this.root.rotate(BABYLON.Axis.X, this.speedRotation.x*dSec, BABYLON.Space.LOCAL); // not .WORLD
-            this.root.rotate(BABYLON.Axis.Z, this.speedRotation.z*dSec, BABYLON.Space.LOCAL);
+                var calc = new BABYLON.AbstractMesh();
+                calc.rotationQuaternion = this.root.rotationQuaternion;
+                calc.position = this.root.position.clone();
+                calc.locallyTranslate(cameraOffset);
+                setCamera(calc.position,
+                    calc.rotationQuaternion);
 
-            // NO!:  https://doc.babylonjs.com/resources/rotation_conventions#euler-angles-to-quaternions
-            // thisroot.rotationQuaternion.addInPlace(BABYLON.Quaternion.RotationYawPitchRoll(speedRotation.y, speedRotation.x, speedRotation.z) );
-
-            var cameraOffset = vrHelper.isInVRMode ? this.cameraOffset1 : this.cameraOffset3;
-
-            var calc = new BABYLON.AbstractMesh();
-            calc.rotationQuaternion = this.root.rotationQuaternion;
-            calc.position           = this.root.position.clone();
-            calc.locallyTranslate(cameraOffset);
-            setCamera(  calc.position,
-                        calc.rotationQuaternion );
-
-// OR:      var matrix = this.root.getWorldMatrix().getRotationMatrix();
-//          cameraOffset = BABYLON.Vector3.TransformCoordinates(cameraOffset, matrix);
-//          setCamera(  this.root.position.add(cameraOffset),
-//                      this.root.rotationQuaternion );
+                // OR:      var matrix = this.root.getWorldMatrix().getRotationMatrix();
+                //          cameraOffset = BABYLON.Vector3.TransformCoordinates(cameraOffset, matrix);
+                //          setCamera(  this.root.position.add(cameraOffset),
+                //                      this.root.rotationQuaternion );
 
 
 
+
+            }
 
         }
 
-    }
 
+        class Space {
 
-    class Space {
+            constructor(scene) {
+                this.scene = scene;
+            }
 
-        constructor(scene) {
-            this.scene = scene;
-        }
-
-        //// "show" the space
-        grid(plusMinus,distance,size) {
-            var dot = BABYLON.MeshBuilder.CreateBox("", {size: size},  this.scene);
-            for(        var z=-plusMinus ; z<+plusMinus ; z++) {
-                for(    var y=-plusMinus ; y<+plusMinus ; y++) {
-                    for(var x=-plusMinus ; x<+plusMinus ; x++) {
-                        var d = dot.clone("");
-                        d.position.x = x * distance;
-                        d.position.y = y * distance;
-                        d.position.z = z * distance;
+            //// "show" the space
+            grid(plusMinus, distance, size) {
+                var dot = BABYLON.MeshBuilder.CreateBox("", {
+                    size: size
+                }, this.scene);
+                for (var z = -plusMinus; z < +plusMinus; z++) {
+                    for (var y = -plusMinus; y < +plusMinus; y++) {
+                        for (var x = -plusMinus; x < +plusMinus; x++) {
+                            var d = dot.clone("");
+                            d.position.x = x * distance;
+                            d.position.y = y * distance;
+                            d.position.z = z * distance;
+                        }
                     }
                 }
             }
-        }
 
 
-        //// mine wall
-        mines(x,plusMinus,distance) {
-            var dia = 0.4;
-            var big = dia*1.7;
-            var sml = dia/10.;
-            var min0 = BABYLON.MeshBuilder.CreateSphere("mn", {diameter:dia}, this.scene);
-            var box1 = BABYLON.MeshBuilder.CreateBox(   "b1", {height:big, width:sml, depth:sml},  this.scene);
-            var box2 = BABYLON.MeshBuilder.CreateBox(   "b2", {height:sml, width:big, depth:sml},  this.scene);
-            var box3 = BABYLON.MeshBuilder.CreateBox(   "b3", {height:sml, width:sml, depth:big},  this.scene);
+            //// mine wall
+            mines(x, plusMinus, distance) {
+                var dia = 0.4;
+                var big = dia * 1.7;
+                var sml = dia / 10.;
+                var min0 = BABYLON.MeshBuilder.CreateSphere("mn", {
+                    diameter: dia
+                }, this.scene);
+                var box1 = BABYLON.MeshBuilder.CreateBox("b1", {
+                    height: big,
+                    width: sml,
+                    depth: sml
+                }, this.scene);
+                var box2 = BABYLON.MeshBuilder.CreateBox("b2", {
+                    height: sml,
+                    width: big,
+                    depth: sml
+                }, this.scene);
+                var box3 = BABYLON.MeshBuilder.CreateBox("b3", {
+                    height: sml,
+                    width: sml,
+                    depth: big
+                }, this.scene);
 
-            var red = new BABYLON.StandardMaterial("red", this.scene);  red.ambientColor = red.diffuseColor = BABYLON.Color3.Red();
-            box1.material =
-            box2.material =
-            box3.material =
-            min0.material = red;
-            var mine = BABYLON.Mesh.MergeMeshes([min0,box1,box2,box3]);
-            mine.position.z = 100;
+                var red = new BABYLON.StandardMaterial("red", this.scene);
+                red.ambientColor = red.diffuseColor = BABYLON.Color3.Red();
+                box1.material =
+                    box2.material =
+                    box3.material =
+                    min0.material = red;
+                var mine = BABYLON.Mesh.MergeMeshes([min0, box1, box2, box3]);
+                mine.position.z = 100;
 
-            var minesArray = [mine];
-            for(    var z=-plusMinus ; z<+plusMinus ; z++) {
-                for(var y=-plusMinus ; y<+plusMinus ; y++) {
-                    var m = mine.clone("");
-                    m.position.x = x;
-                    m.position.y = y * distance;
-                    m.position.z = z * distance;
-                    minesArray.push(m);
+                var minesArray = [mine];
+                for (var z = -plusMinus; z < +plusMinus; z++) {
+                    for (var y = -plusMinus; y < +plusMinus; y++) {
+                        var m = mine.clone("");
+                        m.position.x = x;
+                        m.position.y = y * distance;
+                        m.position.z = z * distance;
+                        minesArray.push(m);
+                    }
+                }
+                var mines = BABYLON.Mesh.MergeMeshes(minesArray);
+                return mines;
+            }
+
+
+            //// set some gates to fly throu
+            gates(count, rotation, dist) {
+                // show a "tunnel"
+                var tor = BABYLON.MeshBuilder.CreateTorus("", {
+                    diameter: 8,
+                    thickness: 0.05,
+                    tessellation: 4
+                }, this.scene);
+                tor.rotation.x = rad(45);
+                tor.rotation.y = rad(90);
+                tor.rotation.z = rad(90);
+                tor.position.z = +4;
+                //r.scaling    = new BABYLON.Vector3(0.3,0.3,1)
+                for (var z = 1; z < count; z++) {
+                    var t = tor.clone("");
+                    t.position.z = 4 + z * dist;
+                    t.rotation.x += rad(z * rotation);
                 }
             }
-            var mines = BABYLON.Mesh.MergeMeshes(minesArray);
-            return mines;
-        }
+
+            skyDome() { // This is so much more easy with BabylonJS
+                // ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
+                var pic1 = "sky.jpg" // bunt
+                var pic2 = "cropped-starglobe-maya-render.jpg" // black
+                var pic3 = "skydome-hdri-starlight-sky-3-3d-model.jpg" // blue
+                var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_X_defish.png" // X klein? Y *4
 
 
-        //// set some gates to fly throu
-        gates(count,rotation,dist) {
-            // show a "tunnel"
-            var tor = BABYLON.MeshBuilder.CreateTorus("", {diameter: 8, thickness: 0.05, tessellation: 4}, this.scene);
-            tor.rotation.x = rad(45);
-            tor.rotation.y = rad(90);
-            tor.rotation.z = rad(90);
-            tor.position.z = +4;
-            //r.scaling    = new BABYLON.Vector3(0.3,0.3,1)
-            for(var z=1 ; z<count ; z++) {
-                var t = tor.clone("");
-                t.position.z = 4+z*dist;
-                t.rotation.x += rad(z*rotation);
-            }
-        }
-
-        skyDome() { // This is so much more easy with BabylonJS
-        	// ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
-            var pic1 = "sky.jpg"                                        // bunt
-            var pic2 = "cropped-starglobe-maya-render.jpg"              // black
-            var pic3 = "skydome-hdri-starlight-sky-3-3d-model.jpg"      // blue
-            var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_X_defish.png"    // X klein? Y *4
-
-
-        	this.sky = new BABYLON.PhotoDome("sky", /*???p*/'./media/'+pic4, {size: vrHelper.currentVRCamera.maxZ*0.9}, this.scene); //bbb resolution: 64,size: radius*2
-        	this.sky.infiniteDistance = true;
-            // Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid.
-            //this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
-        	return this.sky;
-        }
-
-
-
-        animate = function(dSec) {
-
-
-      }//animate
-
-
-    }//Space
-
-
-
-    class Earth {
-
-        constructor(scene) {
-            this.scene = scene;
-
-            // Original Maßstab geht für Erde in der Oculus Quest nicht. Da flackern die Sterne durch die Erde durch
-            var eFACT    = 100
-            var radius   = 63781378/eFACT // m Meter   Erdradius: 6.378.137m
-
-            var material = new BABYLON.StandardMaterial("EarthMaterial", scene);
-            material.diffuseTexture = new BABYLON.Texture('./media/4096_earth.jpg', scene);
-            this.sphere  = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter:radius*2}, scene);
-            this.sphere.material = material;
-            this.sphere.position.y = -(radius + 4/4*100*1000   /5 ) // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
-            this.sphere.rotation.z = rad(180); // Why is the texture upside down ???
-            this.sphere.material = material;
-            return this
-        }
-
-
-      animate(dSec) {
-        this.sphere.rotation.y += 0.00001;
-      }
-
-
-  }//Earth
-
-
-
-
-
-    ///////////// MAIN /////////////////////////////////
-
-    var seconds  = 0;
-    var hmd      = undefined;
-    var vrHelper = undefined;
-    var bike     = undefined; // local?
-    var pod      = undefined;
-    var xwing    = undefined;
-    var earth    = undefined;
-    var control  = undefined;
-    var dSecX    = 1/60;
-
-    function setCamera(absolutePosition, rotationQuaternion) {
-        var camera = vrHelper.currentVRCamera;        // if(vrHelper.isInVRMode)
-        camera.position           = absolutePosition;
-        camera.rotationQuaternion = rotationQuaternion;
-    }
-
-
-
-
-    window.addEventListener('DOMContentLoaded', function() {
-
-        //// INIT
-        var canvas = document.getElementById('viewer');
-        var engine = new BABYLON.Engine(canvas, true);
-        var scene  = new BABYLON.Scene (engine);
-        var light  = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0,1,0), scene);
-
-        scene.clearColor = BABYLON.Color3.Black();
-
-
-
-        var fNEAR = 2;                      // to show the bike close by
-        var fFAR  = 100*1000*1000*1000*1000      // to show the far away earth. Default: 10'000
-
-        vrHelper = scene.createDefaultVRExperience(/*{defaultheight:0.801 NOP! }*/);
-        vrHelper.deviceOrientationCamera.minZ   /= fNEAR    // 2d
-        vrHelper.deviceOrientationCamera.maxZ   *= fFAR
-        vrHelper.vrDeviceOrientationCamera.minZ /= fNEAR    // cardboard
-        vrHelper.vrDeviceOrientationCamera.maxZ *= fFAR
-        vrHelper.webVRCamera.minZ               /= fNEAR    // Oculus       currentVRCamera
-        vrHelper.webVRCamera.maxZ               *= fFAR
-
-        vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
-        vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
-
-
-        hmd    = new HeadMountedDisplay(vrHelper.deviceOrientationCamera,scene);
-        hmd.out(["TEST START"],3000);
-
-        vrHelper.onEnteringVRObservable.add( ()=>{
-            hmd.setParent(bike.root, true);
-        });
-        vrHelper.onExitingVRObservable .add( ()=>{ hmd.setParent(vrHelper.deviceOrientationCamera); });
-
-        vrHelper.onEnteringVR.add(()=>{
-        });
-
-
-        var space = new Space(scene); //      space.grid(2,8,0.5);
-
-//???        space.mines(20,8,15)  // x,plusMinus,distance
-        space.gates(12, 4,5);
-        space.skyDome();
-
-//        earth = new Earth();
-
-/** /    loadGlb("xwing_t65",scene,function(glb){ //
-            xwing = glb;
-            xwing.rotation.y = rad(90);
-            xwing.position.z = -25; // -15   -4
-        });/**/
-/** /
-       loadGlb("pod",scene,function(glb){
-            pod = glb;
-            pod.position.y -= 1.0
-            pod.parent = bike.root;
-        });
-/** /
-        loadGlb("Orion",scene,function(glb){
-            glb.position.x = +500
-            glb.position.y = -150
-        });
-/** /
-        loadGlb("hydra",scene,function(glb){ // "HYDRA-II_glb"  "hydra_o"
-            glb.position.x = +0
-            glb.position.y = -0
-            var s = 10;
-            glb.scaling = new BABYLON.Vector3(s,s,s);
-        });
-
-/**/
-        loadGlb("dragon2",scene,function(glb){
-            glb.position.x = +0
-            glb.position.y = -0
-            var s = 1;
-            glb.scaling = new BABYLON.Vector3(s,s,s);
-        });
-/**/
-
-
-
-
-
-
-        bike    = new Bike(scene);
-        control = new Control(engine, vrHelper);
-
-        //// RENDER CYCLE
-        engine.runRenderLoop(function() {
-            var dSec1 = engine._deltaTime / 1000
-            seconds += dSec1;
-
-            // Why is dSec so irregular??? It causes optical odds while rotating
-            var fact = 6
-            dSecX = ( dSecX*(fact-1)+dSec1 ) / fact;
-
-            if(space) space.animate(dSecX);
-            if(earth) earth.animate(dSecX);
-
-            if(bike.root) {
-                control.animate(dSecX);
-                bike   .animate(dSecX);
+                this.sky = new BABYLON.PhotoDome("sky", /*???p*/ './media/' + pic4, {
+                    size: vrHelper.currentVRCamera.maxZ * 0.9
+                }, this.scene); //bbb resolution: 64,size: radius*2
+                this.sky.infiniteDistance = true;
+                // Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid.
+                //this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
+                return this.sky;
             }
 
-            if(xwing) {
-                var s = seconds*10 % (Math.PI*2)
-                var d = Math.sin(s) / 500;
-                xwing.position.y += d;
+
+
+            animate = function(dSec) {
+
+
+            } //animate
+
+
+        } //Space
+
+
+
+        class Earth {
+
+            constructor(scene) {
+                this.scene = scene;
+
+                // Original Maßstab geht für Erde in der Oculus Quest nicht. Da flackern die Sterne durch die Erde durch
+                var eFACT = 100
+                var radius = 63781378 / eFACT // m Meter   Erdradius: 6.378.137m
+
+                var material = new BABYLON.StandardMaterial("EarthMaterial", scene);
+                material.diffuseTexture = new BABYLON.Texture('./media/4096_earth.jpg', scene);
+                this.sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
+                    diameter: radius * 2
+                }, scene);
+                this.sphere.material = material;
+                this.sphere.position.y = -(radius + 4 / 4 * 100 * 1000 / 5) // 4 * Weltraumgrenze: 100 Kilometern Höhe  100.000m
+                this.sphere.rotation.z = rad(180); // Why is the texture upside down ???
+                this.sphere.material = material;
+                return this
             }
 
-            scene.render();
-        });
+
+            animate(dSec) {
+                this.sphere.rotation.y += 0.00001;
+            }
 
 
-    });// DOMContentLoaded
+        } //Earth
 
 
+
+
+
+        ///////////// MAIN /////////////////////////////////
+
+        var seconds = 0;
+        var hmd = undefined;
+        var vrHelper = undefined;
+        var bike = undefined; // local?
+        var pod = undefined;
+        var xwing = undefined;
+        var earth = undefined;
+        var control = undefined;
+        var dSecX = 1 / 60;
+
+        function setCamera(absolutePosition, rotationQuaternion) {
+            var camera = vrHelper.currentVRCamera; // if(vrHelper.isInVRMode)
+            camera.position = absolutePosition;
+            camera.rotationQuaternion = rotationQuaternion;
+        }
+
+
+
+
+        window.addEventListener('DOMContentLoaded', function() {
+
+            //// INIT
+            var canvas = document.getElementById('viewer');
+            var engine = new BABYLON.Engine(canvas, true);
+            var scene = new BABYLON.Scene(engine);
+            var light = new BABYLON.HemisphericLight('hemisLight', new BABYLON.Vector3(0, 1, 0), scene);
+
+            scene.clearColor = BABYLON.Color3.Black();
+
+
+
+            var fNEAR = 2; // to show the bike close by
+            var fFAR = 100 * 1000 * 1000 * 1000 * 1000 // to show the far away earth. Default: 10'000
+
+            vrHelper = scene.createDefaultVRExperience( /*{defaultheight:0.801 NOP! }*/ );
+            vrHelper.deviceOrientationCamera.minZ /= fNEAR // 2d
+            vrHelper.deviceOrientationCamera.maxZ *= fFAR
+            vrHelper.vrDeviceOrientationCamera.minZ /= fNEAR // cardboard
+            vrHelper.vrDeviceOrientationCamera.maxZ *= fFAR
+            vrHelper.webVRCamera.minZ /= fNEAR // Oculus       currentVRCamera
+            vrHelper.webVRCamera.maxZ *= fFAR
+
+            vrHelper.currentVRCamera.inputs.attached.keyboard.detachControl(); // Works, on-hooks are removed. But still attached :-/
+            vrHelper.currentVRCamera.inputs.attached.mouse.detachControl(); //???
+
+
+            hmd = new HeadMountedDisplay(vrHelper.deviceOrientationCamera, scene);
+            hmd.out(["TEST START"], 3000);
+
+            vrHelper.onEnteringVRObservable.add(() => {
+                hmd.setParent(bike.root, true);
+            });
+            vrHelper.onExitingVRObservable.add(() => {
+                hmd.setParent(vrHelper.deviceOrientationCamera);
+            });
+
+            vrHelper.onEnteringVR.add(() => {});
+
+
+            var space = new Space(scene); //      space.grid(2,8,0.5);
+
+            //???        space.mines(20,8,15)  // x,plusMinus,distance
+            space.gates(12, 4, 5);
+            space.skyDome();
+
+            //        earth = new Earth();
+
+            /**/    loadGlb("xwing_t65",scene,function(glb){ //
+                        xwing = glb;
+                        xwing.rotation.y = rad(90);
+                        xwing.position.z = -25; // -15   -4
+                    });/**/
+            /** /
+                   loadGlb("pod",scene,function(glb){
+                        pod = glb;
+                        pod.position.y -= 1.0
+                        pod.parent = bike.root;
+                    });
+            /** /
+                    loadGlb("Orion",scene,function(glb){
+                        glb.position.x = +500
+                        glb.position.y = -150
+                    });
+            /** /
+                    loadGlb("hydra",scene,function(glb){ // "HYDRA-II_glb"  "hydra_o"
+                        glb.position.x = +0
+                        glb.position.y = -0
+                        var s = 10;
+                        glb.scaling = new BABYLON.Vector3(s,s,s);
+                    });
+
+            /** /
+            loadGlb("dragon2", scene, function(glb) {
+                glb.position.x = +0
+                glb.position.y = -0
+                var s = 1;
+                glb.scaling = new BABYLON.Vector3(s, s, s);
+            });
+            /**/
+
+
+
+
+
+
+            bike = new Bike(scene);
+            control = new Control(engine, vrHelper);
+
+            //// RENDER CYCLE
+            engine.runRenderLoop(function() {
+                var dSec1 = engine._deltaTime / 1000
+                seconds += dSec1;
+
+                // Why is dSec so irregular??? It causes optical odds while rotating
+                var fact = 6
+                dSecX = (dSecX * (fact - 1) + dSec1) / fact;
+
+                if (space) space.animate(dSecX);
+                if (earth) earth.animate(dSecX);
+
+                if (bike.root) {
+                    control.animate(dSecX);
+                    bike.animate(dSecX);
+                }
+
+                if (xwing) {
+                    var s = seconds * 10 % (Math.PI * 2)
+                    var d = Math.sin(s) / 500;
+                    xwing.position.y += d;
+                }
+
+                scene.render();
+            });
+
+
+        }); // DOMContentLoaded
     </script>
 
 </body>
+
 </html>

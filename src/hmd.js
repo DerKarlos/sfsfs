@@ -50,13 +50,13 @@ export class HeadMountedDisplay { // Used to be HeadUpDisplay. But it is not mou
         this.mesh.parent = parent; // NO clone, HMD is in front of the parent
         this.mesh.isPickable = false;
 
-        if (ix) ix.baseExperience.onStateChangedObservable.add(function(state) {
+        if (ix) ix.baseExperience.onStateChangedObservable.add((state) => {
             var z = dist1 / 1;
             if (state == BABYLON.WebXRState.IN_XR)
                 z = dist1 / 1.4; // 1.4 bzw 2.3 because immersive view angle is wider and the hmd must be closer to look the same size
             this.setParent(scene.activeCamera, z);
             this.out(["immersive changed: " + state])
-        }.bind(this));
+        });
 
     }
 
@@ -70,9 +70,9 @@ export class HeadMountedDisplay { // Used to be HeadUpDisplay. But it is not mou
 
         if (texte) {
             if (limit)
-                this.timer = setTimeout(function() {
+                this.timer = setTimeout(() => {
                     this.clear();
-                }.bind(this), limit);
+                }, limit);
 
             var l = texte.length;
             var font = "Bold " + this.textPx + "px Arial"; //"bold 44px monospace";

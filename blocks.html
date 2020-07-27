@@ -172,10 +172,10 @@
             plane.position.z = 2.3;
             plane.parent = scene.activeCamera;
 
-            if (ix) ix.baseExperience.onStateChangedObservable.add(function(state) {
+            if (ix) ix.baseExperience.onStateChangedObservable.add( (state) => {
                 plane.position.z = (state==BABYLON.WebXRState.IN_XR) ? 2.6 : 2.3;
                 plane.parent = scene.activeCamera;
-            }.bind(this));
+            });
 
             var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
             var panel = new BABYLON.GUI.StackPanel();

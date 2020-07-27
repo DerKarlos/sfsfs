@@ -1,8 +1,11 @@
-// import { ModelLoader, updater }   from './utils.js';
 
 import {
     loadGlb
-} from './../src/functions.js';
+} from '../src/functions.js';
+
+import {
+    updater
+} from '../src/utils.js';
 
 
 /*
@@ -38,7 +41,7 @@ var test = 0
 
 export class OrionIX {
 
-    constructor(position, parent, camera, controls, scene, onLoadedCallback) { // TODO: camera, controls, weg?
+    constructor(position, schachtOut, parent, camera, controls, scene, onLoadedCallback) { // TODO: camera, controls, weg?
 
         test++;
 
@@ -46,9 +49,9 @@ export class OrionIX {
         //this.model.castShadow = true;
         //this.model.receiveShadow = true;
         if (position) this.model.position = position;
-        this.schachtposition = 0; // 1 = ganz ausgefahren
-        this.schachtspeed = 0;
-        this.vRadar = 1.0;
+        this._schachtPosition = schachtOut ? 1 : 0; // 1 = ganz ausgefahren
+        this._schachtOut = schachtOut;
+        this._vRadar = 1.0;
 
 
         if (loaded) {
@@ -77,7 +80,6 @@ export class OrionIX {
                     this._checkEnds(child);
                 });
 
-                this.SchachtMove(-1); // Lift einziehen
                 glb.parent = this.model;
                 if (parent) this.model.parent = parent;
 
@@ -88,7 +90,9 @@ export class OrionIX {
 
         } //loading
 
-        //updater.push(this);
+        updater.add(this);
+        this.update(0);
+
 
     } //constructor
 
@@ -115,38 +119,43 @@ export class OrionIX {
         if (child.name.endsWith("Cylinder")) child.isVisible = false;
     }
 
-    SchachtSpeed(set) {
-        if (!this.oben) return;
-        this.schachtspeed = set;
-    }
-
-    SchachtMove(proEins) { // 1 = ganz ausgefahren
-        if (!this.oben) return;
-
-        this.schachtposition += proEins;
-        if (this.schachtposition > 1) this.schachtposition = 1;
-        if (this.schachtposition < 0) this.schachtposition = 0;
-
-        var unten = 9.22 * (1 - this.schachtposition);
-        var mi_ob = 8.83 * (1 - this.schachtposition);
-        this.oben.position.y = mi_ob
-        this.mitte.position.y = mi_ob + mi_ob
-        this.unten.position.y = unten + mi_ob + mi_ob
+    schachtOut(yes) {
+        this._schachtOut = yes;
+        console.log("schacht",yes)
     }
 
 
-    Update(dt, mode) {
+    update(dt) {
         if (!loaded) {
             return;
         }
 
         if (this.radar) {
-            this.radar.rotation.y += this.vRadar * dt; //0.03
+            this.radar.rotation.y += this._vRadar * dt; //0.03
             // if (mode == "gelandet" || mode == "lanzets")
-            this.SchachtMove(this.schachtspeed * dt);
         }
 
-    }
+
+        if (this.oben) {
+            const _schachtSpeed = 0.1;
+            if(this._schachtOut && this._schachtPosition<1) {
+                this._schachtPosition += _schachtSpeed * dt;
+                if(this._schachtPosition>1) this._schachtPosition = 1;
+            }
+            if(!this._schachtOut && this._schachtPosition>0) {
+                this._schachtPosition -= _schachtSpeed * dt;
+                if(this._schachtPosition<0) this._schachtPosition = 0;
+            }
+
+            var unten = 9.22 * (1 - this._schachtPosition);
+            var mi_ob = 8.83 * (1 - this._schachtPosition);
+            this.oben.position.y = mi_ob
+            this.mitte.position.y = mi_ob + mi_ob
+            this.unten.position.y = unten + mi_ob + mi_ob
+        }
+
+
+    }// Update
 
 
 } //class
