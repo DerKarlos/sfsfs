@@ -5,6 +5,7 @@ Science-Fiction Spaceship Flight-Simulator
 
 Do you remember your favourite SF series in TV? Did you like a SF movie? Did you enjoy the design of the spaceships? Did you ever wonder how to fly one? This experiment is an attempt do let you create and fly spaceships.
 
+# OLD! :
 The 3D framework A-Frame is used, which works with ThreeJS which uses WebGL to show and animate a 3D world in a browser page.
 
 * Create ships by A-Frame syntax or use models build by other tools like Blender
