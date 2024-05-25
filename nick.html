@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!-- saved from url=(0069)https://tobias-knerr.de/upload_private/muc-map-aero0uaY/index-gz.html -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>Nick, der Weltraumfahrer</title>
+
+    <style>
+      html,
+      body {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      #renderCanvas {
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+    </style>
+
+    <script src ="./lib/babylon.max.js"></script>
+    <style  type="text/css" id="operaUserStyle"></style>
+    <script src ="./lib/babylonjs.loaders.min.js"></script>
+
+    </script><style>[touch-action="none"]{ -ms-touch-action: none; touch-action: none; }
+[touch-action="auto"]{ -ms-touch-action: auto; touch-action: auto; }
+[touch-action="pan-x"]{ -ms-touch-action: pan-x; touch-action: pan-x; }
+[touch-action="pan-y"]{ -ms-touch-action: pan-y; touch-action: pan-y; }
+[touch-action="pan-x pan-y"],[touch-action="pan-y pan-x"]{ -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; }
+</style>
+
+</head>
+
+  <body>
+    <canvas id="renderCanvas" touch-action="none" width="523" height="754" data-engine="Babylon.js v6.19.1" tabindex="1" style="touch-action: none; -webkit-tap-highlight-color: transparent;"></canvas>
+    <!-- touch-action="none" for best results from PEP -->
+
+    <script>
+
+
+          function skyDome() { // This is so much more easy with BabylonJS
+              // ???  This line causes twice "Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid."
+              var pic4 = "STARGLOBE_SOLARSYSTEM_20121023_X_defish.png" // X klein? Y *4
+
+              let sky = new BABYLON.PhotoDome("sky", /*???p*/ './media/' + pic4, {
+                  size: 9000
+              }, this.scene); //bbb resolution: 64,size: radius*2
+              sky.infiniteDistance = true;
+              // Error: WebGL warning: uniformBlockBinding: Index 4294967295 invalid.
+              //this.sky._mesh.visibility = .001; // does not work, why???  https://www.babylonjs-playground.com/#102TBD#55
+          }
+
+
+        const offset = 0.7; 
+        var speed = 0;
+
+        function loadGlb(glb) {
+          const url = "./ships/BerndZ_";//  "https://www.osmgo.org/sfsfs/ships/BerndZ/";
+          
+          BABYLON.SceneLoader.ImportMeshAsync(null, url, glb + ".glb").then
+          ((result) => {
+            const meshes = result.meshes;
+            for(var i = 0; i< meshes.length; i++ ) {
+              if(shadowGenerator) meshes[i].receiveShadows = true;
+              meshes[i].material = undefined;
+            }
+            if(glb == "Nick-Rakete") {
+              meshes[0].position.y = offset;
+              schiff = meshes[0];
+      	      if(shadowGenerator) shadowGenerator.addShadowCaster(schiff);
+            }
+          })
+        }
+
+      const canvas = document.getElementById("renderCanvas"); // Get the canvas element
+      const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+      var schiff = undefined;
+      var shadowGenerator = undefined;
+
+      const createScene = function () {
+        const scene = new BABYLON.Scene(engine);
+
+
+        const camera = new BABYLON.ArcRotateCamera("camera",
+        BABYLON.Tools.ToRadians(25),
+        BABYLON.Tools.ToRadians(85), 50, BABYLON.Vector3.Zero() /*,new BABYLON.Vector3(0, 0, 0),scene*/);
+        camera.position.y = offset;
+        camera.minZ = 1;
+        camera.maxZ = 10000;
+        camera.lowerRadiusLimit = 3;
+        camera.upperRadiusLimit = 50;
+        camera.attachControl(canvas, true);
+
+        const light = new BABYLON.HemisphericLight("Hem", new BABYLON.Vector3(1, 1, -1), scene);
+			  light.intensity  = 0.2;
+
+	      var sunlight = new BABYLON.DirectionalLight("Dir", new BABYLON.Vector3(-1, -1, 1), scene);
+	      sunlight.position = new BABYLON.Vector3(400, 400, 400);
+	      sunlight.intensity = 1-light.intensity;
+
+        if(false){
+			    //// Shadows - https://doc.babylonjs.com/babylon101/shadows
+	        shadowGenerator = new BABYLON.ShadowGenerator(1024, sunlight);
+	        shadowGenerator.useExponentialShadowMap = true;
+        }
+
+        skyDome();
+        loadGlb("Nick-Rakete");
+        loadGlb("Oberflaeche");
+
+        return scene;
+      }
+
+      const scene = createScene(); //Call the createScene function
+      var seconds = 0;
+
+      // Register a render loop to repeatedly render the scene
+      engine.runRenderLoop(function () {
+
+        const dSec = engine._deltaTime / 1000
+        seconds += dSec;
+
+        let c = scene.activeCamera;
+        let y = c .position.y;
+        if(y<-(offset*0.3)) {c.beta -= 0.005}
+
+        if(seconds > 10) {
+          if(speed<1)
+          speed += (0.1*dSec);
+          schiff.position.y += speed;
+        }
+
+        scene.render();
+      });
+
+      // Watch for browser/canvas resize events
+      window.addEventListener("resize", function () {
+        engine.resize();
+      });
+
+    </script>
+
+</body></html>
